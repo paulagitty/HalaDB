@@ -12,6 +12,8 @@
     body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f9fafb; }
     .no-scrollbar::-webkit-scrollbar { display: none; }
     .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .animate-fade-in { animation: fadeIn 0.4s ease-out forwards; }
   </style>
 </head>
 <body>
@@ -20,17 +22,30 @@
   <script type="text/babel">
     const { useState, useEffect } = React;
 
-    // API URL ของคุณที่เพิ่ง Deploy ใหม่
-    const GOOGLE_API_URL = "https://script.google.com/macros/s/AKfycbyVSGSC5sNwOfxwQvTwi0kpBtUsGn6-4SnsBFqqHNBqjGRoVYR0EFXGOMuuAHVUakTE/exec";
-
-    // --- Icons ---
+    // --- Custom Icons (เพื่อให้เหมือนในรูปเป๊ะๆ) ---
     const IconClipboardList = () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 11h4"/><path d="M12 16h4"/><path d="M8 11h.01"/><path d="M8 16h.01"/></svg>;
     const IconCreditCard = () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/></svg>;
     const IconBarChart2 = () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" x2="18" y1="20" y2="10"/><line x1="12" x2="12" y1="20" y2="4"/><line x1="6" x2="6" y1="20" y2="14"/></svg>;
     const IconPin = () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" x2="12" y1="17" y2="22"/><path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.68V6a3 3 0 0 0-3-3 3 3 0 0 0-3 3v4.68a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24Z"/></svg>;
     const IconChevronDown = () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>;
-    const IconTent = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3.5 21 14 3"/><path d="M20.5 21 10 3"/><path d="M15.5 21 12 15l-3.5 6"/><path d="M2 21h20"/></svg>;
-    const IconSparkles = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/><path d="M5 3v4"/><path d="M3 5h4"/><path d="M19 17v4"/><path d="M17 19h4"/></svg>;
+    
+    // ไอคอนรูปช้าง (Phuket Fantasea)
+    const IconElephant = () => (
+      <svg viewBox="0 0 64 64" width="28" height="28" fill="currentColor">
+        <path d="M58,34.4c-0.8-1.4-2.1-2.4-3.6-3c-1.5-0.6-3.1-0.6-4.6,0c-0.8,0.3-1.4,0.8-2,1.4c-1-1.2-2.5-1.9-4.2-1.9c-2,0-3.8,1-4.8,2.5 c-1-1.1-2.4-1.8-4-1.8c-2,0-3.8,1.1-4.7,2.8c-1.1-1.6-2.9-2.7-5-2.7c-2.3,0-4.3,1.3-5.3,3.3C18.6,35,17,35,16,35c-1.1,0-2,0.9-2,2 s0.9,2,2,2c2.1,0,4-1.3,4.9-3.2c0.3-0.7,1-1.1,1.8-1.1c1.2,0,2.2,1,2.2,2.2c0,3.3,2.7,6,6,6c0.5,0,1,0,1.5-0.1 c1.1,2.1,3.4,3.5,6,3.5c1.6,0,3.1-0.6,4.2-1.6c1.1,1,2.6,1.6,4.2,1.6c2.6,0,4.8-1.4,6-3.5c0.5,0.1,1,0.1,1.5,0.1c3.3,0,6-2.7,6-6 C60,37.3,59.2,35.7,58,34.4z M49.8,35.4c0.5-0.2,1.1-0.2,1.6,0c0.6,0.2,1,0.7,1.2,1.3c0.1,0.3,0.1,0.6,0,0.9c-0.1,0.3-0.3,0.5-0.5,0.7 c-0.2,0.2-0.5,0.3-0.8,0.4c-0.3,0.1-0.6,0.1-0.9,0c-0.6-0.2-1-0.7-1.2-1.3C49.1,36.5,49.3,35.8,49.8,35.4z"/>
+        <path d="M12,28c0-8.8,7.2-16,16-16s16,7.2,16,16v2h4v-2c0-11-9-20-20-20S8,17,8,28v2h4V28z"/>
+      </svg>
+    );
+
+    // ไอคอนรูปเต็นท์ (Carnival Magic)
+    const IconTent = () => (
+      <svg viewBox="0 0 64 64" width="28" height="28" fill="currentColor">
+        <path d="M32,4L4,24v36h56V24L32,4z M32,10.3l20,14.3v4.1L32,14.4L12,28.7v-4.1L32,10.3z M12,34.4l20-14.3l20,14.3v21.6H12V34.4z"/>
+        <rect x="28" y="42" width="8" height="14"/>
+      </svg>
+    );
+
+    const GOOGLE_API_URL = "https://script.google.com/macros/s/AKfycbyVSGSC5sNwOfxwQvTwi0kpBtUsGn6-4SnsBFqqHNBqjGRoVYR0EFXGOMuuAHVUakTE/exec";
 
     function App() {
       const [loading, setLoading] = useState(true);
@@ -49,21 +64,19 @@
       });
 
       useEffect(() => {
-        // วิ่งไปดึงข้อมูลจาก Google Apps Script แบบ API
-        fetch(GOOGLE_API_URL)
-          .then(res => {
-            if (!res.ok) throw new Error("HTTP Status " + res.status);
-            return res.json();
-          })
-          .then(data => {
+        const fetchData = async () => {
+          try {
+            const response = await fetch(GOOGLE_API_URL);
+            const data = await response.json();
             setDashboardData(data);
             setLoading(false);
-          })
-          .catch(err => {
+          } catch (err) {
             console.error("Fetch Error:", err);
-            setErrorMsg("เชื่อมต่อข้อมูลไม่สำเร็จ ลองรีเฟรชหน้าเว็บอีกครั้ง");
+            setErrorMsg("เชื่อมต่อข้อมูลไม่สำเร็จ กรุณาลองรีเฟรชหน้าเว็บอีกครั้ง");
             setLoading(false);
-          });
+          }
+        };
+        fetchData();
       }, []);
 
       const formatCurrency = (amount) => {
@@ -76,7 +89,7 @@
         if (!ym || !ym.includes("-")) return ym;
         const [y, m] = ym.split("-");
         const monthNames = ["", "มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"];
-        return `${monthNames[parseInt(m)]} ${parseInt(y) + 543}`;
+        return `${monthNames[parseInt(m, 10)]} ${parseInt(y) + 543}`;
       };
 
       if (loading) {
@@ -84,15 +97,6 @@
           <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center">
             <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-4"></div>
             <div className="text-xl font-semibold text-gray-500">กำลังดึงข้อมูลล่าสุดจาก Google Sheets...</div>
-          </div>
-        );
-      }
-
-      if (errorMsg) {
-        return (
-          <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center text-red-500 p-8 text-center">
-            <h2 className="text-2xl font-bold mb-4">พบข้อผิดพลาด</h2>
-            <p>{errorMsg}</p>
           </div>
         );
       }
@@ -116,16 +120,19 @@
       const carnivalRemaining = dashboardData.themeParks.carnivalMagic.initialQuota - dashboardData.themeParks.carnivalMagic.used;
 
       return (
-        <div className="min-h-screen bg-gray-50 text-gray-800 font-sans p-4 md:p-8 lg:p-12">
+        <div className="min-h-screen bg-gray-50 text-gray-800 font-sans p-4 md:p-8 lg:p-12 animate-fade-in">
           <div className="max-w-7xl mx-auto">
             
-            <div className="mb-6">
-              <h1 className="text-2xl font-bold text-gray-900">Executive Dashboard</h1>
-              <p className="text-sm text-gray-600 mt-1">
-                {activeTab === 'overview' ? 'ภาพรวมประจำเดือนปัจจุบัน' : `รายงานสรุปรายปี (Yearly Report ${parseInt(currentYear) + 543})`}
-              </p>
+            <div className="mb-6 flex justify-between items-end">
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900">Executive Dashboard</h1>
+                <p className="text-sm text-gray-600 mt-1">
+                  {activeTab === 'overview' ? 'ภาพรวมประจำเดือนปัจจุบัน' : `รายงานสรุปรายปี (Yearly Report ${parseInt(currentYear) + 543})`}
+                </p>
+              </div>
             </div>
 
+            {/* Navigation Bar */}
             <div className="bg-white border border-gray-200 rounded-xl p-2 mb-8 flex flex-col md:flex-row justify-between items-center shadow-sm">
               <div className="flex space-x-1 overflow-x-auto w-full md:w-auto no-scrollbar">
                 <button 
@@ -158,29 +165,33 @@
               </div>
             </div>
 
+            {/* Revenue Cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
-              <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm hover:shadow-md transition-shadow">
+              <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm hover:shadow-md transition-all duration-200">
                 <h3 className="text-sm font-bold text-gray-600 mb-4">{activeTab === 'overview' ? 'รายได้รวมทัวร์' : 'ทัวร์ (ยอดรวมทั้งปี)'}</h3>
                 <p className="text-3xl font-extrabold text-gray-900 tracking-tight">{formatCurrency(displayTourProfit)}</p>
               </div>
-              <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm hover:shadow-md transition-shadow">
+              <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm hover:shadow-md transition-all duration-200">
                 <h3 className="text-sm font-bold text-gray-600 mb-4">{activeTab === 'overview' ? 'รายได้รวมโรงแรม' : 'โรงแรม (ยอดรวมทั้งปี)'}</h3>
                 <p className="text-3xl font-extrabold text-gray-900 tracking-tight">{formatCurrency(displayHotelProfit)}</p>
               </div>
-              <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm hover:shadow-md transition-shadow">
+              <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm hover:shadow-md transition-all duration-200">
                 <h3 className="text-sm font-bold text-gray-600 mb-4">{activeTab === 'overview' ? 'รายได้รวมทั้งหมด' : 'รวมทั้งหมด (ปีนี้)'}</h3>
                 <p className="text-3xl font-extrabold text-blue-600 tracking-tight">{formatCurrency(displayTotalProfit)}</p>
               </div>
             </div>
 
+            {/* Theme Park Status */}
             {activeTab === 'overview' && (
               <div className="animate-fade-in">
                 <h2 className="text-sm font-extrabold text-gray-800 mb-4">Theme Park Status</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="bg-white rounded-xl border border-gray-200 p-8 shadow-sm">
+                  
+                  {/* Phuket Fantasea */}
+                  <div className="bg-white rounded-xl border border-gray-200 p-8 shadow-sm hover:shadow-md transition-shadow">
                     <div className="flex items-center mb-8">
-                      <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mr-4">
-                        <span className="text-gray-500"><IconSparkles /></span>
+                      <div className="w-12 h-12 bg-gray-50 rounded-full flex items-center justify-center mr-4 text-gray-600 border border-gray-100">
+                        <IconElephant />
                       </div>
                       <h3 className="font-semibold text-gray-800">Phuket Fantasea</h3>
                     </div>
@@ -188,23 +199,24 @@
                     <div className="grid grid-cols-3 gap-4 text-center">
                       <div>
                         <p className="text-3xl font-bold text-blue-500 mb-1">{formatNumber(dashboardData.themeParks.fantasea.initialQuota)}</p>
-                        <p className="text-xs font-bold text-gray-500">ทั้งหมด</p>
+                        <p className="text-xs font-bold text-gray-500 uppercase">ทั้งหมด</p>
                       </div>
                       <div>
                         <p className={`text-3xl font-bold mb-1 ${dashboardData.themeParks.fantasea.used > 0 ? 'text-red-500' : 'text-gray-400'}`}>{formatNumber(dashboardData.themeParks.fantasea.used)}</p>
-                        <p className="text-xs font-bold text-gray-500">ใช้ไป</p>
+                        <p className="text-xs font-bold text-gray-500 uppercase">ใช้ไป</p>
                       </div>
                       <div>
                         <p className={`text-3xl font-bold mb-1 ${fantaseaRemaining < 0 ? 'text-red-500' : 'text-green-500'}`}>{formatNumber(fantaseaRemaining)}</p>
-                        <p className="text-xs font-bold text-gray-500">คงเหลือ</p>
+                        <p className="text-xs font-bold text-gray-500 uppercase">คงเหลือ</p>
                       </div>
                     </div>
                   </div>
 
-                  <div className="bg-white rounded-xl border border-gray-200 p-8 shadow-sm">
+                  {/* Carnival Magic */}
+                  <div className="bg-white rounded-xl border border-gray-200 p-8 shadow-sm hover:shadow-md transition-shadow">
                     <div className="flex items-center mb-8">
-                      <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mr-4">
-                        <span className="text-red-500"><IconTent /></span>
+                      <div className="w-12 h-12 bg-red-50 rounded-full flex items-center justify-center mr-4 text-red-500 border border-red-100">
+                        <IconTent />
                       </div>
                       <h3 className="font-semibold text-gray-800">Carnival Magic</h3>
                     </div>
@@ -212,15 +224,15 @@
                     <div className="grid grid-cols-3 gap-4 text-center">
                       <div>
                         <p className="text-3xl font-bold text-blue-500 mb-1">{formatNumber(dashboardData.themeParks.carnivalMagic.initialQuota)}</p>
-                        <p className="text-xs font-bold text-gray-500">ทั้งหมด</p>
+                        <p className="text-xs font-bold text-gray-500 uppercase">ทั้งหมด</p>
                       </div>
                       <div>
                         <p className={`text-3xl font-bold mb-1 ${dashboardData.themeParks.carnivalMagic.used > 0 ? 'text-red-500' : 'text-gray-400'}`}>{formatNumber(dashboardData.themeParks.carnivalMagic.used)}</p>
-                        <p className="text-xs font-bold text-gray-500">ใช้ไป</p>
+                        <p className="text-xs font-bold text-gray-500 uppercase">ใช้ไป</p>
                       </div>
                       <div>
                         <p className={`text-3xl font-bold mb-1 ${carnivalRemaining < 0 ? 'text-red-500' : 'text-green-500'}`}>{formatNumber(carnivalRemaining)}</p>
-                        <p className="text-xs font-bold text-gray-500">คงเหลือ</p>
+                        <p className="text-xs font-bold text-gray-500 uppercase">คงเหลือ</p>
                       </div>
                     </div>
                   </div>
@@ -229,6 +241,7 @@
               </div>
             )}
 
+            {/* Yearly Report Table */}
             {activeTab === 'yearlyReport' && (
               <div className="animate-fade-in">
                 <h2 className="text-sm font-extrabold text-gray-800 mb-4">รายละเอียดรายเดือน (ปี {parseInt(currentYear) + 543})</h2>
