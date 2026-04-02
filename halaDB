@@ -1,0 +1,257 @@
+import React, { useState, useEffect } from 'react';
+import { ClipboardList, CreditCard, BarChart2, Pin, ChevronDown, Tent, Sparkles } from 'lucide-react';
+
+// URL เชื่อมต่อกับฐานข้อมูล Google Sheets ของคุณ
+const GOOGLE_API_URL = "https://script.google.com/macros/s/AKfycbx3Eu9b8Mu_wDix9H-11DnHcdy2olKho_MhDTuJEravZqo3_-w4sgv6fDHiuB8WEyBr/exec";
+
+export default function App() {
+  const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState('overview');
+  const [errorMsg, setErrorMsg] = useState("");
+  
+  const [dashboardData, setDashboardData] = useState({
+    currentMonthText: "กำลังโหลดข้อมูล...",
+    currentMonthValue: "2026-04",
+    overview: { tourOnly: 0, hotelOnly: 0 },
+    themeParks: {
+      fantasea: { initialQuota: 183, used: 0 },
+      carnivalMagic: { initialQuota: 1200, used: 0 }
+    },
+    yearlyReport: []
+  });
+
+  // ฟังก์ชันดึงข้อมูลจาก Google Sheets
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const response = await fetch(GOOGLE_API_URL);
+        
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        setDashboardData(data);
+        setLoading(false);
+      } catch (err) {
+        console.error("Fetch Error:", err);
+        setErrorMsg("ไม่สามารถเชื่อมต่อฐานข้อมูลได้ กรุณาตรวจสอบการแชร์ Web App หรือลองรีเฟรชหน้าเว็บ");
+        setLoading(false);
+      }
+    };
+    
+    fetchData();
+  }, []);
+
+  const formatCurrency = (amount) => {
+    return new Intl.NumberFormat('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(amount || 0) + " ฿";
+  };
+  
+  const formatNumber = (num) => new Intl.NumberFormat('th-TH').format(num || 0);
+
+  const getMonthName = (ym) => {
+    if (!ym || !ym.includes("-")) return ym;
+    const [y, m] = ym.split("-");
+    const monthNames = ["", "มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"];
+    return `${monthNames[parseInt(m, 10)]} ${parseInt(y) + 543}`;
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center">
+        <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-4"></div>
+        <div className="text-xl font-semibold text-gray-500">กำลังดึงข้อมูลล่าสุดจากฐานข้อมูล...</div>
+      </div>
+    );
+  }
+
+  if (errorMsg) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center text-red-500 p-8 text-center">
+        <h2 className="text-2xl font-bold mb-4">พบข้อผิดพลาด</h2>
+        <p>{errorMsg}</p>
+        <button 
+          onClick={() => window.location.reload()} 
+          className="mt-6 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+        >
+          ลองใหม่อีกครั้ง
+        </button>
+      </div>
+    );
+  }
+
+  const currentYear = dashboardData.currentMonthValue.split('-')[0] || "2026";
+  const thisYearReport = dashboardData.yearlyReport.filter(r => r.month.startsWith(currentYear));
+  
+  let displayTourProfit = 0;
+  let displayHotelProfit = 0;
+
+  if (activeTab === 'overview') {
+    displayTourProfit = dashboardData.overview.tourOnly;
+    displayHotelProfit = dashboardData.overview.hotelOnly;
+  } else if (activeTab === 'yearlyReport') {
+    displayTourProfit = thisYearReport.reduce((sum, r) => sum + r.tourProfit, 0);
+    displayHotelProfit = thisYearReport.reduce((sum, r) => sum + r.hotelProfit, 0);
+  }
+  
+  const displayTotalProfit = displayTourProfit + displayHotelProfit;
+  const fantaseaRemaining = dashboardData.themeParks.fantasea.initialQuota - dashboardData.themeParks.fantasea.used;
+  const carnivalRemaining = dashboardData.themeParks.carnivalMagic.initialQuota - dashboardData.themeParks.carnivalMagic.used;
+
+  return (
+    <div className="min-h-screen bg-gray-50 text-gray-800 font-sans p-4 md:p-8 lg:p-12">
+      <div className="max-w-7xl mx-auto">
+        
+        <div className="mb-6">
+          <h1 className="text-2xl font-bold text-gray-900">Executive Dashboard</h1>
+          <p className="text-sm text-gray-600 mt-1">
+            {activeTab === 'overview' ? 'ภาพรวมประจำเดือนปัจจุบัน' : `รายงานสรุปรายปี (Yearly Report ${parseInt(currentYear) + 543})`}
+          </p>
+        </div>
+
+        {/* เมนูนำทาง */}
+        <div className="bg-white border border-gray-200 rounded-xl p-2 mb-8 flex flex-col md:flex-row justify-between items-center shadow-sm">
+          <div className="flex space-x-1 overflow-x-auto w-full md:w-auto">
+            <button 
+              onClick={() => setActiveTab('overview')}
+              className={`flex items-center px-4 py-2 rounded-lg text-sm font-bold whitespace-nowrap transition-colors ${activeTab === 'overview' ? 'bg-blue-50 text-blue-600' : 'text-gray-500 hover:bg-gray-50'}`}>
+              ภาพรวม
+            </button>
+            <button className="flex items-center px-4 py-2 text-gray-500 hover:bg-gray-50 rounded-lg text-sm font-semibold transition-colors whitespace-nowrap">
+              <ClipboardList className="w-4 h-4 mr-2 text-gray-400" /> Daily Ops
+            </button>
+            <button className="flex items-center px-4 py-2 text-gray-500 hover:bg-gray-50 rounded-lg text-sm font-semibold transition-colors whitespace-nowrap">
+              <CreditCard className="w-4 h-4 mr-2 text-gray-400" /> Payment Due
+            </button>
+            <button 
+              onClick={() => setActiveTab('yearlyReport')}
+              className={`flex items-center px-4 py-2 rounded-lg text-sm font-bold whitespace-nowrap transition-colors ${activeTab === 'yearlyReport' ? 'bg-blue-50 text-blue-600' : 'text-gray-500 hover:bg-gray-50'}`}>
+              <BarChart2 className={`w-4 h-4 mr-2 ${activeTab === 'yearlyReport' ? 'text-blue-500' : 'text-gray-400'}`} /> Yearly Report
+            </button>
+            <button className="flex items-center px-4 py-2 text-gray-500 hover:bg-gray-50 rounded-lg text-sm font-semibold transition-colors whitespace-nowrap">
+              <Pin className="w-4 h-4 mr-2 text-red-500" /> Other <ChevronDown className="w-3 h-3 ml-1 text-gray-400" />
+            </button>
+          </div>
+          
+          <div className="mt-4 md:mt-0 px-2 w-full md:w-auto">
+            <div className="px-4 py-1.5 flex items-center bg-green-50 text-green-700 border border-green-200 rounded-lg shadow-sm">
+              <span className="text-sm font-bold">
+                {activeTab === 'overview' ? dashboardData.currentMonthText : `รายรับรวมทั้งปี ${parseInt(currentYear) + 543}`}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* การ์ดรายได้ */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+          <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm hover:shadow-md transition-shadow">
+            <h3 className="text-sm font-bold text-gray-600 mb-4">{activeTab === 'overview' ? 'รายได้รวมทัวร์' : 'ทัวร์ (ยอดรวมทั้งปี)'}</h3>
+            <p className="text-3xl font-extrabold text-gray-900 tracking-tight">{formatCurrency(displayTourProfit)}</p>
+          </div>
+          <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm hover:shadow-md transition-shadow">
+            <h3 className="text-sm font-bold text-gray-600 mb-4">{activeTab === 'overview' ? 'รายได้รวมโรงแรม' : 'โรงแรม (ยอดรวมทั้งปี)'}</h3>
+            <p className="text-3xl font-extrabold text-gray-900 tracking-tight">{formatCurrency(displayHotelProfit)}</p>
+          </div>
+          <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm hover:shadow-md transition-shadow">
+            <h3 className="text-sm font-bold text-gray-600 mb-4">{activeTab === 'overview' ? 'รายได้รวมทั้งหมด' : 'รวมทั้งหมด (ปีนี้)'}</h3>
+            <p className="text-3xl font-extrabold text-blue-600 tracking-tight">{formatCurrency(displayTotalProfit)}</p>
+          </div>
+        </div>
+
+        {/* แท็บภาพรวม: Theme Park Status */}
+        {activeTab === 'overview' && (
+          <div className="animate-fade-in">
+            <h2 className="text-sm font-extrabold text-gray-800 mb-4">Theme Park Status</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              
+              <div className="bg-white rounded-xl border border-gray-200 p-8 shadow-sm hover:shadow-md transition-shadow">
+                <div className="flex items-center mb-8">
+                  <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mr-4">
+                    <Sparkles className="w-6 h-6 text-gray-500" />
+                  </div>
+                  <h3 className="font-semibold text-gray-800">Phuket Fantasea</h3>
+                </div>
+                <div className="border-t border-dashed border-gray-200 mb-6"></div>
+                <div className="grid grid-cols-3 gap-4 text-center">
+                  <div>
+                    <p className="text-3xl font-bold text-blue-500 mb-1">{formatNumber(dashboardData.themeParks.fantasea.initialQuota)}</p>
+                    <p className="text-xs font-bold text-gray-500">ทั้งหมด</p>
+                  </div>
+                  <div>
+                    <p className={`text-3xl font-bold mb-1 ${dashboardData.themeParks.fantasea.used > 0 ? 'text-red-500' : 'text-gray-400'}`}>{formatNumber(dashboardData.themeParks.fantasea.used)}</p>
+                    <p className="text-xs font-bold text-gray-500">ใช้ไป</p>
+                  </div>
+                  <div>
+                    <p className={`text-3xl font-bold mb-1 ${fantaseaRemaining < 0 ? 'text-red-500' : 'text-green-500'}`}>{formatNumber(fantaseaRemaining)}</p>
+                    <p className="text-xs font-bold text-gray-500">คงเหลือ</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white rounded-xl border border-gray-200 p-8 shadow-sm hover:shadow-md transition-shadow">
+                <div className="flex items-center mb-8">
+                  <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mr-4">
+                    <Tent className="w-6 h-6 text-red-500" />
+                  </div>
+                  <h3 className="font-semibold text-gray-800">Carnival Magic</h3>
+                </div>
+                <div className="border-t border-dashed border-gray-200 mb-6"></div>
+                <div className="grid grid-cols-3 gap-4 text-center">
+                  <div>
+                    <p className="text-3xl font-bold text-blue-500 mb-1">{formatNumber(dashboardData.themeParks.carnivalMagic.initialQuota)}</p>
+                    <p className="text-xs font-bold text-gray-500">ทั้งหมด</p>
+                  </div>
+                  <div>
+                    <p className={`text-3xl font-bold mb-1 ${dashboardData.themeParks.carnivalMagic.used > 0 ? 'text-red-500' : 'text-gray-400'}`}>{formatNumber(dashboardData.themeParks.carnivalMagic.used)}</p>
+                    <p className="text-xs font-bold text-gray-500">ใช้ไป</p>
+                  </div>
+                  <div>
+                    <p className={`text-3xl font-bold mb-1 ${carnivalRemaining < 0 ? 'text-red-500' : 'text-green-500'}`}>{formatNumber(carnivalRemaining)}</p>
+                    <p className="text-xs font-bold text-gray-500">คงเหลือ</p>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        )}
+
+        {/* แท็บรายงานรายปี */}
+        {activeTab === 'yearlyReport' && (
+          <div className="animate-fade-in">
+            <h2 className="text-sm font-extrabold text-gray-800 mb-4">รายละเอียดรายเดือน (ปี {parseInt(currentYear) + 543})</h2>
+            <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">เดือน</th>
+                      <th className="px-6 py-4 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">รายได้ทัวร์</th>
+                      <th className="px-6 py-4 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">รายได้โรงแรม</th>
+                      <th className="px-6 py-4 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">รวมทั้งหมด</th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-100">
+                    {thisYearReport.length === 0 ? (
+                      <tr><td colSpan="4" className="px-6 py-8 text-center text-gray-500">ไม่พบข้อมูลของปีนี้</td></tr>
+                    ) : (
+                      thisYearReport.map((row, idx) => (
+                        <tr key={idx} className="hover:bg-blue-50 transition-colors">
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-700">{getMonthName(row.month)}</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-600">{formatCurrency(row.tourProfit)}</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-600">{formatCurrency(row.hotelProfit)}</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-right text-blue-600">{formatCurrency(row.totalProfit)}</td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
+
+      </div>
+    </div>
+  );
+}
