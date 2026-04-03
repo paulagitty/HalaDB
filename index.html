@@ -59,7 +59,7 @@
     // ฟังก์ชันแปลงวันที่ให้สวยงาม (2026-04-03 -> 03/04/2026)
     const formatDateShow = (dStr) => {
       if (!dStr) return '';
-      if (dStr.length === 7) return dStr; // กรณีหลุดมาเป็นเดือน
+      if (dStr.length === 7) return dStr; 
       const parts = dStr.split('-');
       if(parts.length === 3) return `${parts[2]}/${parts[1]}/${parts[0]}`;
       return dStr;
@@ -170,7 +170,7 @@
             custDueDate: editForm.custStatus ? '' : editForm.custDueDate,
             custPaidDate: editForm.custStatus ? editForm.custPaidDate : '',
             custEmail: editForm.custEmail,
-            isCleared: isClearedFlag
+            isCleared: isClearedFlag 
           }
         };
 
@@ -262,29 +262,35 @@
             </div>
 
             {/* Navigation Bar */}
-            <div className="bg-white border border-gray-200 rounded-xl p-2 mb-8 flex flex-col md:flex-row justify-between items-center shadow-sm">
-              <div className="flex space-x-1 overflow-x-auto w-full md:w-auto no-scrollbar">
-                <button onClick={() => setActiveTab('overview')} className={`flex items-center px-4 py-2 rounded-lg text-sm font-bold whitespace-nowrap transition-colors ${activeTab === 'overview' ? 'bg-blue-50 text-blue-600' : 'text-gray-500 hover:bg-gray-50'}`}>ภาพรวม</button>
-                <button onClick={() => setActiveTab('dailyOps')} className={`flex items-center px-4 py-2 rounded-lg text-sm font-bold whitespace-nowrap transition-colors ${activeTab === 'dailyOps' ? 'bg-blue-50 text-blue-600' : 'text-gray-500 hover:bg-gray-50'}`}><IconClipboardList /> <span className="ml-2">Daily Ops</span></button>
-                <button onClick={() => setActiveTab('paymentDue')} className={`flex items-center px-4 py-2 rounded-lg text-sm font-bold whitespace-nowrap transition-colors ${activeTab === 'paymentDue' ? 'bg-blue-50 text-blue-600' : 'text-gray-500 hover:bg-gray-50'}`}><IconCreditCard /> <span className="ml-2">Payment Due</span></button>
-                <button onClick={() => setActiveTab('yearlyReport')} className={`flex items-center px-4 py-2 rounded-lg text-sm font-bold whitespace-nowrap transition-colors ${activeTab === 'yearlyReport' ? 'bg-blue-50 text-blue-600' : 'text-gray-500 hover:bg-gray-50'}`}><IconBarChart2 /> <span className="ml-2">Yearly Report</span></button>
+            <div className="bg-white border border-gray-200 rounded-xl p-2 mb-8 flex flex-col md:flex-row justify-between items-center shadow-sm relative z-40">
+              
+              {/* --- โซนเมนูด้านซ้าย + ปุ่ม Other แยกออกมาตามที่ Claude แนะนำ --- */}
+              <div className="flex items-center w-full md:w-auto overflow-visible">
                 
-                {/* แก้ไขปุ่ม Other ใช้ <a> เพื่อให้เปิดแท็บใหม่ได้ชัวร์ 100% */}
-                <div className="relative">
+                {/* ส่วนของเมนูหลัก เลื่อนซ้ายขวาได้ */}
+                <div className="flex space-x-1 overflow-x-auto no-scrollbar w-full">
+                  <button onClick={() => setActiveTab('overview')} className={`flex items-center px-4 py-2 rounded-lg text-sm font-bold whitespace-nowrap transition-colors ${activeTab === 'overview' ? 'bg-blue-50 text-blue-600' : 'text-gray-500 hover:bg-gray-50'}`}>ภาพรวม</button>
+                  <button onClick={() => setActiveTab('dailyOps')} className={`flex items-center px-4 py-2 rounded-lg text-sm font-bold whitespace-nowrap transition-colors ${activeTab === 'dailyOps' ? 'bg-blue-50 text-blue-600' : 'text-gray-500 hover:bg-gray-50'}`}><IconClipboardList /> <span className="ml-2">Daily Ops</span></button>
+                  <button onClick={() => setActiveTab('paymentDue')} className={`flex items-center px-4 py-2 rounded-lg text-sm font-bold whitespace-nowrap transition-colors ${activeTab === 'paymentDue' ? 'bg-blue-50 text-blue-600' : 'text-gray-500 hover:bg-gray-50'}`}><IconCreditCard /> <span className="ml-2">Payment Due</span></button>
+                  <button onClick={() => setActiveTab('yearlyReport')} className={`flex items-center px-4 py-2 rounded-lg text-sm font-bold whitespace-nowrap transition-colors ${activeTab === 'yearlyReport' ? 'bg-blue-50 text-blue-600' : 'text-gray-500 hover:bg-gray-50'}`}><IconBarChart2 /> <span className="ml-2">Yearly Report</span></button>
+                </div>
+                
+                {/* ปุ่ม Other อยู่นอกโซน overflow จะได้ไม่โดนตัดทิ้ง */}
+                <div className="relative ml-1 shrink-0">
                   <button 
                     onClick={() => setIsOtherMenuOpen(!isOtherMenuOpen)}
-                    className="flex items-center px-4 py-2 text-gray-500 hover:bg-gray-50 rounded-lg text-sm font-semibold transition-colors whitespace-nowrap"
+                    className="flex items-center px-3 py-2 text-gray-500 hover:bg-gray-50 rounded-lg text-sm font-semibold transition-colors whitespace-nowrap"
                   >
                     <span className="text-red-500"><IconPin /></span> 
-                    <span className="ml-2">Other</span> 
+                    <span className="ml-2 hidden sm:block">Other</span> 
                     <span className="ml-1 text-gray-400"><IconChevronDown /></span>
                   </button>
                   
                   {isOtherMenuOpen && (
                     <>
-                      <div className="fixed inset-0 z-40" onClick={() => setIsOtherMenuOpen(false)}></div>
-                      <div className="absolute left-0 top-full mt-2 w-56 bg-white rounded-xl shadow-xl z-50 border border-gray-100 overflow-hidden animate-fade-in">
-                        <div className="py-1 relative z-50 flex flex-col">
+                      <div className="fixed inset-0 z-[100]" onClick={() => setIsOtherMenuOpen(false)}></div>
+                      <div className="absolute right-0 sm:left-0 top-full mt-2 w-56 bg-white rounded-xl shadow-xl z-[101] border border-gray-100 overflow-hidden animate-fade-in">
+                        <div className="py-1 flex flex-col">
                           <a 
                             href="https://script.google.com/macros/s/AKfycbxS0oAeM3iMVvoVO55RH0AJE9D6hM7XAvPjuPcZORWWOlh4KBeHeoA44jAwVDvCZnQ/exec"
                             target="_blank" 
@@ -310,7 +316,8 @@
                 </div>
 
               </div>
-              <div className="mt-4 md:mt-0 px-2 w-full md:w-auto">
+
+              <div className="mt-4 md:mt-0 px-2 w-full md:w-auto shrink-0">
                 {activeTab !== 'dailyOps' && activeTab !== 'paymentDue' && (
                   <div className="px-4 py-1.5 flex items-center bg-green-50 text-green-700 border border-green-200 rounded-lg shadow-sm">
                     <span className="text-sm font-bold">
@@ -496,7 +503,6 @@
                                   <p className="text-sm text-gray-600 mt-1.5">
                                     {payment.service} <span className="mx-1.5 text-gray-400">-</span> {payment.agent} 
                                     
-                                    {/* อัปเดตการแสดงผลวันที่ให้อยู่บรรทัดเดียวกัน คั่นด้วย - และไม่มีคำว่า เที่ยว: */}
                                     {payment.type === 'Tour' && (payment.dateStr || payment.serviceDate) && (
                                       <><span className="mx-1.5 text-gray-400">-</span> <span className="font-semibold text-gray-800">{formatDateShow(payment.dateStr || payment.serviceDate)}</span></>
                                     )}
