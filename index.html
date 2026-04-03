@@ -13,7 +13,7 @@
     .no-scrollbar::-webkit-scrollbar { display: none; }
     .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-    .animate-fade-in { animation: fadeIn 0.4s ease-out forwards; }
+    .animate-fade-in { animation: fadeIn 0.2s ease-out forwards; }
     .toggle-checkbox:checked { right: 0; border-color: #68D391; }
     .toggle-checkbox:checked + .toggle-label { background-color: #68D391; }
     .toggle-checkbox { right: 0; z-index: 1; border-color: #e2e8f0; transition: all 0.3s; }
@@ -74,6 +74,9 @@
       const [expandedPaymentId, setExpandedPaymentId] = useState(null);
       const [editForm, setEditForm] = useState({});
       
+      // เพิ่ม State สำหรับควบคุมการเปิด-ปิด Dropdown ปุ่ม Other
+      const [isOtherMenuOpen, setIsOtherMenuOpen] = useState(false);
+      
       const [dashboardData, setDashboardData] = useState({
         currentMonthText: "กำลังโหลดข้อมูล...",
         currentMonthValue: "",
@@ -119,7 +122,6 @@
                     
                     // ถ้ายังไม่ได้ตั้ง Due Date เลย ให้เรียงตามวันเที่ยว/วันเช็คอิน
                     if (!hasDue && item.serviceDate) {
-                        // ป้องกันกรณี Parse วันที่ไม่ได้
                         const sDate = new Date(item.serviceDate).getTime();
                         if (!isNaN(sDate)) urgency = Math.min(urgency, sDate);
                     }
@@ -139,7 +141,6 @@
       };
 
       const handleEditPayment = (payment) => {
-        // ใช้ UID เป็น Key ในการเปิดปิดหน้าต่าง เพื่อแยกรายการอิสระ
         if (expandedPaymentId === payment.uid) {
           setExpandedPaymentId(null);
         } else {
@@ -152,16 +153,17 @@
             custStatus: payment.custStatus === 'Paid',
             custDueDate: payment.custDueDate || '',
             custPaidDate: payment.custPaidDate || '',
-            custEmail: payment.custEmail || false
+            custEmail: payment.custEmail || false,
+            isCleared: payment.isCleared || false
           });
         }
       };
 
-      const handleSavePayment = async (uid, voucherRaw) => {
+      const handleSavePayment = async (uid, voucherRaw, isClearedFlag = false) => {
         setSaving(true);
         const payload = {
           action: 'savePayment',
-          uid: uid,             // ส่ง UID ไปค้นหาในตาราง
+          uid: uid,             
           voucherRaw: voucherRaw,
           data: {
             suppStatus: editForm.suppStatus ? 'Paid' : 'Unpaid',
@@ -171,7 +173,8 @@
             custStatus: editForm.custStatus ? 'Paid' : 'Unpaid',
             custDueDate: editForm.custStatus ? '' : editForm.custDueDate,
             custPaidDate: editForm.custStatus ? editForm.custPaidDate : '',
-            custEmail: editForm.custEmail
+            custEmail: editForm.custEmail,
+            isCleared: isClearedFlag // ส่งสถานะว่าเคลียร์รายการนี้ทิ้งหรือไม่
           }
         };
 
@@ -179,13 +182,7 @@
           const res = await fetch(GOOGLE_API_URL, { method: 'POST', body: JSON.stringify(payload) });
           const result = await res.json();
           if(result.status === 'success') {
-             // อัปเดตข้อมูลบนหน้าเว็บทันที
-             setDashboardData(prev => {
-                const newList = prev.paymentList.map(p => p.uid === uid ? { ...p, ...payload.data } : p);
-                return { ...prev, paymentList: newList };
-             });
-             // จัดเรียงใหม่
-             fetchData();
+             await fetchData();
              setExpandedPaymentId(null);
           }
         } catch (err) {
@@ -250,7 +247,7 @@
       const filteredTours = rawTours.filter(t => t.dateStr === targetDateYMD);
       const filteredHotels = rawHotels.filter(h => h.dateStr === targetDateYMD);
       
-      const paymentList = dashboardData?.paymentList || [];
+      const paymentList = (dashboardData?.paymentList || []).filter(p => p.isCleared !== true);
 
       return (
         <div className="min-h-screen bg-gray-50 text-gray-800 font-sans p-4 md:p-8 lg:p-12 animate-fade-in">
@@ -275,7 +272,50 @@
                 <button onClick={() => setActiveTab('dailyOps')} className={`flex items-center px-4 py-2 rounded-lg text-sm font-bold whitespace-nowrap transition-colors ${activeTab === 'dailyOps' ? 'bg-blue-50 text-blue-600' : 'text-gray-500 hover:bg-gray-50'}`}><IconClipboardList /> <span className="ml-2">Daily Ops</span></button>
                 <button onClick={() => setActiveTab('paymentDue')} className={`flex items-center px-4 py-2 rounded-lg text-sm font-bold whitespace-nowrap transition-colors ${activeTab === 'paymentDue' ? 'bg-blue-50 text-blue-600' : 'text-gray-500 hover:bg-gray-50'}`}><IconCreditCard /> <span className="ml-2">Payment Due</span></button>
                 <button onClick={() => setActiveTab('yearlyReport')} className={`flex items-center px-4 py-2 rounded-lg text-sm font-bold whitespace-nowrap transition-colors ${activeTab === 'yearlyReport' ? 'bg-blue-50 text-blue-600' : 'text-gray-500 hover:bg-gray-50'}`}><IconBarChart2 /> <span className="ml-2">Yearly Report</span></button>
-                <button className="flex items-center px-4 py-2 text-gray-500 hover:bg-gray-50 rounded-lg text-sm font-semibold transition-colors whitespace-nowrap"><span className="text-red-500"><IconPin /></span> <span className="ml-2">Other</span> <span className="ml-1 text-gray-400"><IconChevronDown /></span></button>
+                
+                {/* ปุ่ม Other แบบมี Dropdown Menu (แก้ไขให้ทำงานได้ 100%) */}
+                <div className="relative">
+                  <button 
+                    onClick={() => setIsOtherMenuOpen(!isOtherMenuOpen)}
+                    className="flex items-center px-4 py-2 text-gray-500 hover:bg-gray-50 rounded-lg text-sm font-semibold transition-colors whitespace-nowrap"
+                  >
+                    <span className="text-red-500"><IconPin /></span> 
+                    <span className="ml-2">Other</span> 
+                    <span className="ml-1 text-gray-400"><IconChevronDown /></span>
+                  </button>
+                  
+                  {isOtherMenuOpen && (
+                    <>
+                      {/* ฉากหลังใสสำหรับกดเพื่อปิด Dropdown */}
+                      <div 
+                        className="fixed inset-0 z-40" 
+                        onClick={() => setIsOtherMenuOpen(false)}
+                      ></div>
+                      
+                      <div className="absolute left-0 mt-1 w-56 bg-white rounded-xl shadow-lg z-50 border border-gray-100 overflow-hidden animate-fade-in origin-top-left">
+                        <div className="py-1 relative z-50">
+                          <a 
+                            href="https://script.google.com/macros/s/AKfycbxS0oAeM3iMVvoVO55RH0AJE9D6hM7XAvPjuPcZORWWOlh4KBeHeoA44jAwVDvCZnQ/exec" 
+                            target="_blank" rel="noopener noreferrer"
+                            onClick={() => setIsOtherMenuOpen(false)}
+                            className="block px-4 py-2.5 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 font-medium transition-colors"
+                          >
+                            HalaWalla Booking
+                          </a>
+                          <a 
+                            href="https://taxi-booking-one.vercel.app" 
+                            target="_blank" rel="noopener noreferrer"
+                            onClick={() => setIsOtherMenuOpen(false)}
+                            className="block px-4 py-2.5 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 font-medium transition-colors"
+                          >
+                            Taxi Booking
+                          </a>
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </div>
+
               </div>
               <div className="mt-4 md:mt-0 px-2 w-full md:w-auto">
                 {activeTab !== 'dailyOps' && activeTab !== 'paymentDue' && (
@@ -561,9 +601,14 @@
                                   </div>
                                 </div>
                                 
-                                {/* บันทึก */}
-                                <div className="md:col-span-2 flex justify-end mt-2">
-                                  <button onClick={() => handleSavePayment(payment.uid, payment.voucherRaw)} disabled={saving} className={`px-6 py-2 rounded-lg font-bold text-white shadow-sm transition-all ${saving ? 'bg-gray-400 cursor-not-allowed' : 'bg-gray-900 hover:bg-black hover:shadow-md'}`}>
+                                {/* บันทึก & เคลียร์ (เพิ่มปุ่มนี้เมื่อ Paid 2 ฝั่ง) */}
+                                <div className="md:col-span-2 flex justify-end mt-4 pt-4 border-t border-gray-200 space-x-3">
+                                  {(editForm.suppStatus && editForm.custStatus) && (
+                                    <button onClick={() => handleSavePayment(payment.uid, payment.voucherRaw, true)} disabled={saving} className={`px-6 py-2 rounded-lg font-bold text-white shadow-sm transition-all ${saving ? 'bg-gray-400 cursor-not-allowed' : 'bg-green-500 hover:bg-green-600 hover:shadow-md'}`}>
+                                      {saving ? 'กำลังบันทึก...' : '✅ บันทึก & เคลียร์ออกเลย'}
+                                    </button>
+                                  )}
+                                  <button onClick={() => handleSavePayment(payment.uid, payment.voucherRaw, false)} disabled={saving} className={`px-6 py-2 rounded-lg font-bold text-white shadow-sm transition-all ${saving ? 'bg-gray-400 cursor-not-allowed' : 'bg-gray-900 hover:bg-black hover:shadow-md'}`}>
                                     {saving ? 'กำลังบันทึก...' : 'บันทึกข้อมูล'}
                                   </button>
                                 </div>
