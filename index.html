@@ -14,6 +14,11 @@
     .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     .animate-fade-in { animation: fadeIn 0.4s ease-out forwards; }
+    /* Toggle Switch Styles */
+    .toggle-checkbox:checked { right: 0; border-color: #68D391; }
+    .toggle-checkbox:checked + .toggle-label { background-color: #68D391; }
+    .toggle-checkbox { right: 0; z-index: 1; border-color: #e2e8f0; transition: all 0.3s; }
+    .toggle-label { width: 3rem; height: 1.5rem; background-color: #e2e8f0; border-radius: 9999px; transition: all 0.3s; cursor: pointer; }
   </style>
 </head>
 <body>
@@ -34,17 +39,33 @@
     const IconBuilding = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="4" y="2" width="16" height="20" rx="2" ry="2"/><path d="M9 22v-4h6v4"/><path d="M8 6h.01"/><path d="M16 6h.01"/><path d="M12 6h.01"/><path d="M12 10h.01"/><path d="M12 14h.01"/><path d="M16 10h.01"/><path d="M16 14h.01"/><path d="M8 10h.01"/><path d="M8 14h.01"/></svg>;
     const IconChevronLeft = () => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>;
     const IconChevronRight = () => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6"/></svg>;
+    const IconCheckCircle = () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="m9 11 3 3L22 4"/></svg>;
+    const IconAlertCircle = () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/></svg>;
 
     // ลิงก์ Web App (Backend)
     const GOOGLE_API_URL = "https://script.google.com/macros/s/AKfycbyVSGSC5sNwOfxwQvTwi0kpBtUsGn6-4SnsBFqqHNBqjGRoVYR0EFXGOMuuAHVUakTE/exec";
 
+    // Component สำหรับ Toggle สวิตช์ Paid/Unpaid
+    const StatusToggle = ({ isPaid, onChange, label }) => (
+      <div className="flex items-center space-x-3">
+        <span className={`text-sm font-bold ${isPaid ? 'text-gray-400' : 'text-red-500'}`}>Unpaid</span>
+        <div className="relative inline-block w-12 h-6 align-middle select-none transition duration-200 ease-in">
+          <input type="checkbox" checked={isPaid} onChange={(e) => onChange(e.target.checked)} className="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer"/>
+          <label className="toggle-label block overflow-hidden h-6 rounded-full bg-gray-300 cursor-pointer"></label>
+        </div>
+        <span className={`text-sm font-bold ${isPaid ? 'text-green-500' : 'text-gray-400'}`}>Paid</span>
+      </div>
+    );
+
     function App() {
       const [loading, setLoading] = useState(true);
+      const [saving, setSaving] = useState(false);
       const [activeTab, setActiveTab] = useState('overview');
       const [errorMsg, setErrorMsg] = useState("");
       
-      // ตัวแปรเก็บวันที่สำหรับการดู Daily Ops (ค่าเริ่มต้นคือวันนี้)
       const [opsDate, setOpsDate] = useState(new Date());
+      const [expandedPaymentId, setExpandedPaymentId] = useState(null);
+      const [editForm, setEditForm] = useState({});
       
       const [dashboardData, setDashboardData] = useState({
         currentMonthText: "กำลังโหลดข้อมูล...",
@@ -52,24 +73,112 @@
         overview: { tourOnly: 0, hotelOnly: 0 },
         themeParks: { fantasea: { initialQuota: 183, used: 0 }, carnivalMagic: { initialQuota: 1200, used: 0 } },
         yearlyReport: [],
-        dailyOps: { tours: [], hotels: [] }
+        dailyOps: { tours: [], hotels: [] },
+        paymentList: [] // ข้อมูลสำหรับ Payment Due
       });
 
       useEffect(() => {
-        const fetchData = async () => {
-          try {
-            const response = await fetch(GOOGLE_API_URL);
-            const data = await response.json();
-            setDashboardData(data);
-            setLoading(false);
-          } catch (err) {
-            console.error("Fetch Error:", err);
-            setErrorMsg("เชื่อมต่อข้อมูลไม่สำเร็จ กรุณาลองรีเฟรชหน้าเว็บอีกครั้ง");
-            setLoading(false);
-          }
-        };
         fetchData();
       }, []);
+
+      const fetchData = async () => {
+        try {
+          const response = await fetch(GOOGLE_API_URL);
+          const data = await response.json();
+          
+          // เรียงลำดับ paymentList โดยเอาวันที่ดิวที่ใกล้ที่สุดขึ้นก่อน (แยกจาก Paid)
+          if(data.paymentList) {
+             data.paymentList.sort((a, b) => {
+                // ถ้าจ่ายครบทั้งคู่ เอาไว้ท้ายสุด
+                if (a.suppStatus === 'Paid' && a.custStatus === 'Paid') return 1;
+                if (b.suppStatus === 'Paid' && b.custStatus === 'Paid') return -1;
+                
+                // หาวันที่ใกล้ที่สุดของ A
+                let aDate = new Date(8640000000000000); // Max date
+                if (a.suppStatus !== 'Paid' && a.suppDueDate) aDate = new Date(a.suppDueDate);
+                if (a.custStatus !== 'Paid' && a.custDueDate) {
+                    const cDate = new Date(a.custDueDate);
+                    if(cDate < aDate) aDate = cDate;
+                }
+                
+                // หาวันที่ใกล้ที่สุดของ B
+                let bDate = new Date(8640000000000000);
+                if (b.suppStatus !== 'Paid' && b.suppDueDate) bDate = new Date(b.suppDueDate);
+                if (b.custStatus !== 'Paid' && b.custDueDate) {
+                    const cDate = new Date(b.custDueDate);
+                    if(cDate < bDate) bDate = cDate;
+                }
+                
+                return aDate - bDate;
+             });
+          }
+          
+          setDashboardData(data);
+          setLoading(false);
+        } catch (err) {
+          console.error("Fetch Error:", err);
+          setErrorMsg("เชื่อมต่อข้อมูลไม่สำเร็จ กรุณาลองรีเฟรชหน้าเว็บอีกครั้ง");
+          setLoading(false);
+        }
+      };
+
+      const handleEditPayment = (payment) => {
+        if (expandedPaymentId === payment.voucherRaw) {
+          setExpandedPaymentId(null);
+        } else {
+          setExpandedPaymentId(payment.voucherRaw);
+          setEditForm({
+            suppStatus: payment.suppStatus === 'Paid',
+            suppDueDate: payment.suppDueDate || '',
+            suppEmail: payment.suppEmail || false,
+            custStatus: payment.custStatus === 'Paid',
+            custDueDate: payment.custDueDate || '',
+            custEmail: payment.custEmail || false
+          });
+        }
+      };
+
+      const handleSavePayment = async (voucherRaw) => {
+        setSaving(true);
+        const payload = {
+          action: 'savePayment',
+          voucherRaw: voucherRaw,
+          data: {
+            suppStatus: editForm.suppStatus ? 'Paid' : 'Unpaid',
+            suppDueDate: editForm.suppStatus ? '' : editForm.suppDueDate,
+            suppEmail: editForm.suppEmail,
+            custStatus: editForm.custStatus ? 'Paid' : 'Unpaid',
+            custDueDate: editForm.custStatus ? '' : editForm.custDueDate,
+            custEmail: editForm.custEmail
+          }
+        };
+
+        try {
+          const res = await fetch(GOOGLE_API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: JSON.stringify(payload)
+          });
+          const result = await res.json();
+          if(result.status === 'success') {
+             // อัปเดตข้อมูลใน State ทันทีเพื่อให้ UI เปลี่ยนโดยไม่ต้องโหลดใหม่
+             setDashboardData(prev => {
+                const newList = prev.paymentList.map(p => {
+                    if(p.voucherRaw === voucherRaw) {
+                        return { ...p, ...payload.data };
+                    }
+                    return p;
+                });
+                return { ...prev, paymentList: newList };
+             });
+             setExpandedPaymentId(null);
+          }
+        } catch (err) {
+          alert("บันทึกไม่สำเร็จ: " + err.message);
+        } finally {
+          setSaving(false);
+        }
+      };
 
       const formatCurrency = (amount) => new Intl.NumberFormat('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(amount || 0) + " ฿";
       const formatNumber = (num) => new Intl.NumberFormat('th-TH').format(num || 0);
@@ -81,7 +190,6 @@
         return `${monthNames[parseInt(m, 10)]} ${parseInt(y) + 543}`;
       };
 
-      // ฟังก์ชันเลื่อนวันที่
       const changeOpsDate = (days) => {
         const newDate = new Date(opsDate);
         newDate.setDate(newDate.getDate() + days);
@@ -124,22 +232,18 @@
       const fantaseaRemaining = (dashboardData?.themeParks?.fantasea?.initialQuota || 0) - (dashboardData?.themeParks?.fantasea?.used || 0);
       const carnivalRemaining = (dashboardData?.themeParks?.carnivalMagic?.initialQuota || 0) - (dashboardData?.themeParks?.carnivalMagic?.used || 0);
 
-      // --------------------------------------------------------
-      // ระบบกรองวันที่ (Daily Ops Filter)
-      // --------------------------------------------------------
+      // --- Daily Ops Filter ---
       const y = opsDate.getFullYear();
       const m = String(opsDate.getMonth() + 1).padStart(2, '0');
       const d = String(opsDate.getDate()).padStart(2, '0');
-      const targetDateYMD = `${y}-${m}-${d}`; // รูปแบบ YYYY-MM-DD เพื่อเอาไปเทียบกับข้อมูลที่ส่งมาจาก Backend
+      const targetDateYMD = `${y}-${m}-${d}`;
 
       const rawTours = dashboardData?.dailyOps?.tours || [];
       const rawHotels = dashboardData?.dailyOps?.hotels || [];
-
-      // กรองเฉพาะทัวร์ที่เป็นของวันที่เลือก
       const filteredTours = rawTours.filter(t => t.dateStr === targetDateYMD);
-
-      // กรองเฉพาะโรงแรมที่ "เช็คอิน" ในวันที่เลือก
       const filteredHotels = rawHotels.filter(h => h.dateStr === targetDateYMD);
+      
+      const paymentList = dashboardData?.paymentList || [];
 
       return (
         <div className="min-h-screen bg-gray-50 text-gray-800 font-sans p-4 md:p-8 lg:p-12 animate-fade-in">
@@ -151,6 +255,7 @@
                 <p className="text-sm text-gray-600 mt-1">
                   {activeTab === 'overview' ? 'ภาพรวมประจำเดือนปัจจุบัน' : 
                    activeTab === 'yearlyReport' ? `รายงานสรุปรายปี (Yearly Report ${parseInt(currentYear) + 543})` :
+                   activeTab === 'paymentDue' ? 'ระบบจัดการกำหนดชำระเงิน (Payment Due)' :
                    'รายงานการดำเนินงานประจำวัน (Daily Operations)'}
                 </p>
               </div>
@@ -169,7 +274,9 @@
                   className={`flex items-center px-4 py-2 rounded-lg text-sm font-bold whitespace-nowrap transition-colors ${activeTab === 'dailyOps' ? 'bg-blue-50 text-blue-600' : 'text-gray-500 hover:bg-gray-50'}`}>
                   <IconClipboardList /> <span className="ml-2">Daily Ops</span>
                 </button>
-                <button className="flex items-center px-4 py-2 text-gray-500 hover:bg-gray-50 rounded-lg text-sm font-semibold transition-colors whitespace-nowrap">
+                <button 
+                  onClick={() => setActiveTab('paymentDue')}
+                  className={`flex items-center px-4 py-2 rounded-lg text-sm font-bold whitespace-nowrap transition-colors ${activeTab === 'paymentDue' ? 'bg-blue-50 text-blue-600' : 'text-gray-500 hover:bg-gray-50'}`}>
                   <IconCreditCard /> <span className="ml-2">Payment Due</span>
                 </button>
                 <button 
@@ -183,7 +290,7 @@
               </div>
               
               <div className="mt-4 md:mt-0 px-2 w-full md:w-auto">
-                {activeTab !== 'dailyOps' && (
+                {activeTab !== 'dailyOps' && activeTab !== 'paymentDue' && (
                   <div className="px-4 py-1.5 flex items-center bg-green-50 text-green-700 border border-green-200 rounded-lg shadow-sm">
                     <span className="text-sm font-bold">
                       {activeTab === 'overview' ? (dashboardData?.currentMonthText || "รายรับเดือนปัจจุบัน") : `รายรับรวมทั้งปี ${parseInt(currentYear) + 543}`}
@@ -305,8 +412,6 @@
             {/* ส่วนแสดงผล: Daily Ops */}
             {activeTab === 'dailyOps' && (
               <div className="animate-fade-in space-y-6">
-                
-                {/* แผงควบคุมวันที่ เลื่อนไป-มา ได้อิสระ */}
                 <div className="flex flex-col sm:flex-row items-center justify-between mb-4 bg-white p-3 rounded-xl border border-gray-200 shadow-sm">
                   <h2 className="text-lg font-extrabold text-gray-800 mb-3 sm:mb-0 ml-2">รายการปฏิบัติงาน</h2>
                   <div className="flex items-center space-x-2 bg-gray-50 p-1.5 rounded-lg border border-gray-200">
@@ -328,8 +433,6 @@
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  
-                  {/* กรอบทัวร์ */}
                   <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden flex flex-col h-full">
                     <div className="bg-blue-50 border-b border-blue-100 px-6 py-4 flex items-center">
                       <div className="bg-blue-100 text-blue-600 p-2 rounded-lg mr-3">
@@ -369,7 +472,6 @@
                     </div>
                   </div>
 
-                  {/* กรอบโรงแรม */}
                   <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden flex flex-col h-full">
                     <div className="bg-purple-50 border-b border-purple-100 px-6 py-4 flex items-center">
                       <div className="bg-purple-100 text-purple-600 p-2 rounded-lg mr-3">
@@ -409,7 +511,184 @@
                       )}
                     </div>
                   </div>
+                </div>
+              </div>
+            )}
 
+            {/* ส่วนแสดงผล: Payment Due */}
+            {activeTab === 'paymentDue' && (
+              <div className="animate-fade-in">
+                <div className="flex justify-between items-center mb-4">
+                  <h2 className="text-lg font-extrabold text-gray-800">รายการค้างชำระ / รอตรวจสอบ</h2>
+                  <span className="bg-orange-100 text-orange-700 px-3 py-1 rounded-full text-xs font-bold border border-orange-200">
+                    เรียงตามวันที่ใกล้กำหนดชำระ
+                  </span>
+                </div>
+
+                <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+                  {paymentList.length === 0 ? (
+                    <div className="p-12 text-center text-gray-400">
+                      <IconCreditCard className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                      <p>ไม่พบรายการ Booking จากเดือนปัจจุบันเป็นต้นไป</p>
+                    </div>
+                  ) : (
+                    <div className="divide-y divide-gray-100">
+                      {paymentList.map((payment, idx) => {
+                        const isExpanded = expandedPaymentId === payment.voucherRaw;
+                        
+                        return (
+                          <div key={idx} className="transition-colors hover:bg-gray-50/50">
+                            {/* ส่วนแสดงข้อมูลบรรทัดแรก (คลิกเพื่อกางออกได้) */}
+                            <div 
+                              className="p-4 cursor-pointer flex items-center justify-between"
+                              onClick={() => handleEditPayment(payment)}
+                            >
+                              <div className="flex items-center space-x-4 flex-1">
+                                <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${payment.type === 'Tour' ? 'bg-blue-100 text-blue-600' : 'bg-purple-100 text-purple-600'}`}>
+                                  {payment.type === 'Tour' ? <IconBus /> : <IconBuilding />}
+                                </div>
+                                <div className="flex-1">
+                                  <div className="flex items-center space-x-2">
+                                    <span className="bg-gray-800 text-white text-[10px] font-bold px-1.5 py-0.5 rounded">
+                                      {payment.voucher}
+                                    </span>
+                                    <h4 className="font-bold text-gray-900 text-sm">{payment.customer}</h4>
+                                  </div>
+                                  <p className="text-xs text-gray-500 mt-1">{payment.service} <span className="mx-1">•</span> {payment.agent}</p>
+                                </div>
+                              </div>
+                              
+                              {/* สรุปสถานะย่อๆ */}
+                              <div className="flex items-center space-x-4 text-xs font-bold mr-4">
+                                <div className="flex flex-col items-end">
+                                  <span className="text-gray-400 mb-1">ซัพพลายเออร์</span>
+                                  {payment.suppStatus === 'Paid' ? 
+                                    <span className="flex items-center text-green-500"><IconCheckCircle /> <span className="ml-1">Paid</span></span> : 
+                                    <span className="flex items-center text-red-500"><IconAlertCircle /> <span className="ml-1">{payment.suppDueDate ? `Due: ${payment.suppDueDate}` : 'Unpaid'}</span></span>
+                                  }
+                                </div>
+                                <div className="w-px h-8 bg-gray-200 mx-2"></div>
+                                <div className="flex flex-col items-start">
+                                  <span className="text-gray-400 mb-1">ลูกค้า</span>
+                                  {payment.custStatus === 'Paid' ? 
+                                    <span className="flex items-center text-green-500"><IconCheckCircle /> <span className="ml-1">Paid</span></span> : 
+                                    <span className="flex items-center text-red-500"><IconAlertCircle /> <span className="ml-1">{payment.custDueDate ? `Due: ${payment.custDueDate}` : 'Unpaid'}</span></span>
+                                  }
+                                </div>
+                              </div>
+                              <div className="text-gray-400">
+                                {isExpanded ? <IconChevronDown /> : <IconChevronRight />}
+                              </div>
+                            </div>
+
+                            {/* ส่วนกรอกข้อมูล (จะกางออกเมื่อถูกคลิก) */}
+                            {isExpanded && (
+                              <div className="bg-gray-50 p-6 border-t border-gray-100 grid grid-cols-1 md:grid-cols-2 gap-8 animate-fade-in shadow-inner">
+                                
+                                {/* ฝั่งซัพพลายเออร์ */}
+                                <div className="bg-white p-5 rounded-lg border border-gray-200 shadow-sm relative overflow-hidden">
+                                  <div className="absolute top-0 left-0 w-1 h-full bg-blue-400"></div>
+                                  <h3 className="font-bold text-gray-800 border-b border-gray-100 pb-3 mb-4 flex items-center">
+                                    <IconBuilding /> <span className="ml-2">การจ่ายเงินซัพพลายเออร์</span>
+                                  </h3>
+                                  
+                                  <div className="space-y-5">
+                                    <div className="flex items-center justify-between">
+                                      <span className="text-sm font-medium text-gray-600">สถานะการจ่ายเงิน</span>
+                                      <StatusToggle 
+                                        isPaid={editForm.suppStatus} 
+                                        onChange={(val) => setEditForm({...editForm, suppStatus: val, suppDueDate: val ? '' : editForm.suppDueDate})} 
+                                      />
+                                    </div>
+                                    
+                                    <div className={`transition-opacity ${editForm.suppStatus ? 'opacity-40 pointer-events-none' : 'opacity-100'}`}>
+                                      <label className="block text-sm font-medium text-gray-600 mb-1">กำหนดชำระเงิน (Due Date)</label>
+                                      <input 
+                                        type="date" 
+                                        value={editForm.suppDueDate}
+                                        onChange={(e) => setEditForm({...editForm, suppDueDate: e.target.value})}
+                                        className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        disabled={editForm.suppStatus}
+                                      />
+                                    </div>
+
+                                    <div className={`flex items-center ${editForm.suppStatus ? 'opacity-40 pointer-events-none' : 'opacity-100'}`}>
+                                      <input 
+                                        type="checkbox" 
+                                        id="suppEmail" 
+                                        checked={editForm.suppEmail}
+                                        onChange={(e) => setEditForm({...editForm, suppEmail: e.target.checked})}
+                                        className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                                        disabled={editForm.suppStatus}
+                                      />
+                                      <label htmlFor="suppEmail" className="ml-2 text-sm text-gray-600">
+                                        ส่งอีเมลแจ้งเตือนแอดมินล่วงหน้า 1 วัน
+                                      </label>
+                                    </div>
+                                  </div>
+                                </div>
+
+                                {/* ฝั่งลูกค้า */}
+                                <div className="bg-white p-5 rounded-lg border border-gray-200 shadow-sm relative overflow-hidden">
+                                  <div className="absolute top-0 left-0 w-1 h-full bg-orange-400"></div>
+                                  <h3 className="font-bold text-gray-800 border-b border-gray-100 pb-3 mb-4 flex items-center">
+                                    <IconCreditCard /> <span className="ml-2">การรับเงินจากลูกค้า</span>
+                                  </h3>
+                                  
+                                  <div className="space-y-5">
+                                    <div className="flex items-center justify-between">
+                                      <span className="text-sm font-medium text-gray-600">สถานะการรับเงิน</span>
+                                      <StatusToggle 
+                                        isPaid={editForm.custStatus} 
+                                        onChange={(val) => setEditForm({...editForm, custStatus: val, custDueDate: val ? '' : editForm.custDueDate})} 
+                                      />
+                                    </div>
+                                    
+                                    <div className={`transition-opacity ${editForm.custStatus ? 'opacity-40 pointer-events-none' : 'opacity-100'}`}>
+                                      <label className="block text-sm font-medium text-gray-600 mb-1">กำหนดรับเงิน (Due Date)</label>
+                                      <input 
+                                        type="date" 
+                                        value={editForm.custDueDate}
+                                        onChange={(e) => setEditForm({...editForm, custDueDate: e.target.value})}
+                                        className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+                                        disabled={editForm.custStatus}
+                                      />
+                                    </div>
+
+                                    <div className={`flex items-center ${editForm.custStatus ? 'opacity-40 pointer-events-none' : 'opacity-100'}`}>
+                                      <input 
+                                        type="checkbox" 
+                                        id="custEmail" 
+                                        checked={editForm.custEmail}
+                                        onChange={(e) => setEditForm({...editForm, custEmail: e.target.checked})}
+                                        className="w-4 h-4 text-orange-600 border-gray-300 rounded focus:ring-orange-500"
+                                        disabled={editForm.custStatus}
+                                      />
+                                      <label htmlFor="custEmail" className="ml-2 text-sm text-gray-600">
+                                        ส่งอีเมลแจ้งเตือนแอดมินล่วงหน้า 1 วัน
+                                      </label>
+                                    </div>
+                                  </div>
+                                </div>
+                                
+                                {/* ปุ่มบันทึก */}
+                                <div className="md:col-span-2 flex justify-end mt-2">
+                                  <button 
+                                    onClick={() => handleSavePayment(payment.voucherRaw)}
+                                    disabled={saving}
+                                    className={`px-6 py-2 rounded-lg font-bold text-white shadow-sm transition-all ${saving ? 'bg-gray-400 cursor-not-allowed' : 'bg-gray-900 hover:bg-black hover:shadow-md'}`}
+                                  >
+                                    {saving ? 'กำลังบันทึก...' : 'บันทึกข้อมูล'}
+                                  </button>
+                                </div>
+
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
               </div>
             )}
