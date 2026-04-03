@@ -94,27 +94,32 @@
         );
       }
 
-      const currentYear = dashboardData.currentMonthValue.split('-')[0] || "2026";
-      const thisYearReport = dashboardData.yearlyReport.filter(r => r.month.startsWith(currentYear));
+      // ระบบป้องกัน (Optional Chaining) ป้องกันจอขาวกรณีโหลดข้อมูลมาไม่ครบ
+      const currentYear = (dashboardData?.currentMonthValue || "2026-04").split('-')[0] || "2026";
+      const thisYearReport = (dashboardData?.yearlyReport || []).filter(r => r.month.startsWith(currentYear));
       
       let displayTourProfit = 0;
       let displayHotelProfit = 0;
 
       if (activeTab === 'overview') {
-        displayTourProfit = dashboardData.overview.tourOnly;
-        displayHotelProfit = dashboardData.overview.hotelOnly;
+        displayTourProfit = dashboardData?.overview?.tourOnly || 0;
+        displayHotelProfit = dashboardData?.overview?.hotelOnly || 0;
       } else if (activeTab === 'yearlyReport') {
-        displayTourProfit = thisYearReport.reduce((sum, r) => sum + r.tourProfit, 0);
-        displayHotelProfit = thisYearReport.reduce((sum, r) => sum + r.hotelProfit, 0);
+        displayTourProfit = thisYearReport.reduce((sum, r) => sum + (r.tourProfit || 0), 0);
+        displayHotelProfit = thisYearReport.reduce((sum, r) => sum + (r.hotelProfit || 0), 0);
       }
       
       const displayTotalProfit = displayTourProfit + displayHotelProfit;
-      const fantaseaRemaining = dashboardData.themeParks.fantasea.initialQuota - dashboardData.themeParks.fantasea.used;
-      const carnivalRemaining = dashboardData.themeParks.carnivalMagic.initialQuota - dashboardData.themeParks.carnivalMagic.used;
+      const fantaseaRemaining = (dashboardData?.themeParks?.fantasea?.initialQuota || 0) - (dashboardData?.themeParks?.fantasea?.used || 0);
+      const carnivalRemaining = (dashboardData?.themeParks?.carnivalMagic?.initialQuota || 0) - (dashboardData?.themeParks?.carnivalMagic?.used || 0);
 
       // วันที่ปัจจุบันสำหรับโชว์บนหัวข้อ Daily Ops
       const todayDateObj = new Date();
       const todayFormatted = todayDateObj.toLocaleDateString('th-TH', { day: 'numeric', month: 'long', year: 'numeric' });
+
+      // ดึงอาร์เรย์มาใช้งาน ป้องกัน undefined
+      const toursList = dashboardData?.dailyOps?.tours || [];
+      const hotelsList = dashboardData?.dailyOps?.hotels || [];
 
       return (
         <div className="min-h-screen bg-gray-50 text-gray-800 font-sans p-4 md:p-8 lg:p-12 animate-fade-in">
@@ -161,7 +166,7 @@
                 {activeTab !== 'dailyOps' && (
                   <div className="px-4 py-1.5 flex items-center bg-green-50 text-green-700 border border-green-200 rounded-lg shadow-sm">
                     <span className="text-sm font-bold">
-                      {activeTab === 'overview' ? dashboardData.currentMonthText : `รายรับรวมทั้งปี ${parseInt(currentYear) + 543}`}
+                      {activeTab === 'overview' ? (dashboardData?.currentMonthText || "รายรับเดือนปัจจุบัน") : `รายรับรวมทั้งปี ${parseInt(currentYear) + 543}`}
                     </span>
                   </div>
                 )}
@@ -200,11 +205,11 @@
                         <div className="border-t border-dashed border-gray-200 mb-6"></div>
                         <div className="grid grid-cols-3 gap-4 text-center">
                           <div>
-                            <p className="text-3xl font-bold text-blue-500 mb-1">{formatNumber(dashboardData.themeParks.fantasea.initialQuota)}</p>
+                            <p className="text-3xl font-bold text-blue-500 mb-1">{formatNumber(dashboardData?.themeParks?.fantasea?.initialQuota)}</p>
                             <p className="text-xs font-bold text-gray-500 uppercase">ทั้งหมด</p>
                           </div>
                           <div>
-                            <p className={`text-3xl font-bold mb-1 ${dashboardData.themeParks.fantasea.used > 0 ? 'text-red-500' : 'text-gray-400'}`}>{formatNumber(dashboardData.themeParks.fantasea.used)}</p>
+                            <p className={`text-3xl font-bold mb-1 ${(dashboardData?.themeParks?.fantasea?.used || 0) > 0 ? 'text-red-500' : 'text-gray-400'}`}>{formatNumber(dashboardData?.themeParks?.fantasea?.used)}</p>
                             <p className="text-xs font-bold text-gray-500 uppercase">ใช้ไป</p>
                           </div>
                           <div>
@@ -224,11 +229,11 @@
                         <div className="border-t border-dashed border-gray-200 mb-6"></div>
                         <div className="grid grid-cols-3 gap-4 text-center">
                           <div>
-                            <p className="text-3xl font-bold text-blue-500 mb-1">{formatNumber(dashboardData.themeParks.carnivalMagic.initialQuota)}</p>
+                            <p className="text-3xl font-bold text-blue-500 mb-1">{formatNumber(dashboardData?.themeParks?.carnivalMagic?.initialQuota)}</p>
                             <p className="text-xs font-bold text-gray-500 uppercase">ทั้งหมด</p>
                           </div>
                           <div>
-                            <p className={`text-3xl font-bold mb-1 ${dashboardData.themeParks.carnivalMagic.used > 0 ? 'text-red-500' : 'text-gray-400'}`}>{formatNumber(dashboardData.themeParks.carnivalMagic.used)}</p>
+                            <p className={`text-3xl font-bold mb-1 ${(dashboardData?.themeParks?.carnivalMagic?.used || 0) > 0 ? 'text-red-500' : 'text-gray-400'}`}>{formatNumber(dashboardData?.themeParks?.carnivalMagic?.used)}</p>
                             <p className="text-xs font-bold text-gray-500 uppercase">ใช้ไป</p>
                           </div>
                           <div>
@@ -296,18 +301,18 @@
                       </div>
                       <h3 className="font-bold text-gray-800">ทัวร์วันนี้ (Today's Tours)</h3>
                       <span className="ml-auto bg-blue-600 text-white text-xs font-bold px-2 py-1 rounded-full">
-                        {dashboardData.dailyOps.tours.length} รายการ
+                        {toursList.length} รายการ
                       </span>
                     </div>
                     <div className="p-4 flex-1">
-                      {dashboardData.dailyOps.tours.length === 0 ? (
+                      {toursList.length === 0 ? (
                         <div className="flex flex-col items-center justify-center h-40 text-gray-400">
                           <IconClipboardList />
                           <p className="mt-2 text-sm">ไม่มีรายการทัวร์ในวันนี้</p>
                         </div>
                       ) : (
                         <div className="space-y-3">
-                          {dashboardData.dailyOps.tours.map((t, idx) => (
+                          {toursList.map((t, idx) => (
                             <div key={idx} className="flex items-center p-3 border border-gray-100 rounded-lg hover:border-blue-300 hover:shadow-sm transition-all bg-gray-50/50">
                               <div className="bg-gray-800 text-white text-xs font-bold px-2 py-1 rounded mr-3 min-w-[3rem] text-center">
                                 {t.voucher}
@@ -336,18 +341,18 @@
                       </div>
                       <h3 className="font-bold text-gray-800">เช็คอินโรงแรมวันนี้ (Today's Check-ins)</h3>
                       <span className="ml-auto bg-purple-600 text-white text-xs font-bold px-2 py-1 rounded-full">
-                        {dashboardData.dailyOps.hotels.length} รายการ
+                        {hotelsList.length} รายการ
                       </span>
                     </div>
                     <div className="p-4 flex-1">
-                      {dashboardData.dailyOps.hotels.length === 0 ? (
+                      {hotelsList.length === 0 ? (
                         <div className="flex flex-col items-center justify-center h-40 text-gray-400">
                           <IconClipboardList />
                           <p className="mt-2 text-sm">ไม่มีรายการเช็คอินโรงแรมในวันนี้</p>
                         </div>
                       ) : (
                         <div className="space-y-3">
-                          {dashboardData.dailyOps.hotels.map((h, idx) => (
+                          {hotelsList.map((h, idx) => (
                             <div key={idx} className="flex items-center p-3 border border-gray-100 rounded-lg hover:border-purple-300 hover:shadow-sm transition-all bg-gray-50/50">
                               <div className="bg-gray-800 text-white text-xs font-bold px-2 py-1 rounded mr-3 min-w-[3rem] text-center">
                                 {h.voucher}
