@@ -60,8 +60,8 @@
     const formatDateShow = (dStr) => {
       if (!dStr) return '';
       if (dStr.length === 7) return dStr; // กรณีเป็น 2026-04 ให้คงไว้
-      const [y, m, d] = dStr.split('-');
-      if(y && m && d) return `${d}/${m}/${y}`;
+      const parts = dStr.split('-');
+      if(parts.length === 3) return `${parts[2]}/${parts[1]}/${parts[0]}`;
       return dStr;
     };
 
@@ -119,7 +119,9 @@
                     
                     // ถ้ายังไม่ได้ตั้ง Due Date เลย ให้เรียงตามวันเที่ยว/วันเช็คอิน
                     if (!hasDue && item.serviceDate) {
-                        urgency = Math.min(urgency, new Date(item.serviceDate).getTime());
+                        // ป้องกันกรณี Parse วันที่ไม่ได้
+                        const sDate = new Date(item.serviceDate).getTime();
+                        if (!isNaN(sDate)) urgency = Math.min(urgency, sDate);
                     }
                     return urgency;
                 };
@@ -137,10 +139,11 @@
       };
 
       const handleEditPayment = (payment) => {
-        if (expandedPaymentId === payment.voucherRaw) {
+        // ใช้ UID เป็น Key ในการเปิดปิดหน้าต่าง เพื่อแยกรายการอิสระ
+        if (expandedPaymentId === payment.uid) {
           setExpandedPaymentId(null);
         } else {
-          setExpandedPaymentId(payment.voucherRaw);
+          setExpandedPaymentId(payment.uid);
           setEditForm({
             suppStatus: payment.suppStatus === 'Paid',
             suppDueDate: payment.suppDueDate || '',
@@ -154,10 +157,11 @@
         }
       };
 
-      const handleSavePayment = async (voucherRaw) => {
+      const handleSavePayment = async (uid, voucherRaw) => {
         setSaving(true);
         const payload = {
           action: 'savePayment',
+          uid: uid,             // ส่ง UID ไปค้นหาในตาราง
           voucherRaw: voucherRaw,
           data: {
             suppStatus: editForm.suppStatus ? 'Paid' : 'Unpaid',
@@ -175,8 +179,13 @@
           const res = await fetch(GOOGLE_API_URL, { method: 'POST', body: JSON.stringify(payload) });
           const result = await res.json();
           if(result.status === 'success') {
-             // โหลดข้อมูลใหม่ทั้งหมดเพื่อเรียงลำดับใหม่ทันที
-             await fetchData();
+             // อัปเดตข้อมูลบนหน้าเว็บทันที
+             setDashboardData(prev => {
+                const newList = prev.paymentList.map(p => p.uid === uid ? { ...p, ...payload.data } : p);
+                return { ...prev, paymentList: newList };
+             });
+             // จัดเรียงใหม่
+             fetchData();
              setExpandedPaymentId(null);
           }
         } catch (err) {
@@ -415,7 +424,7 @@
                   ) : (
                     <div className="divide-y divide-gray-100">
                       {paymentList.map((payment, idx) => {
-                        const isExpanded = expandedPaymentId === payment.voucherRaw;
+                        const isExpanded = expandedPaymentId === payment.uid;
                         
                         return (
                           <div key={idx} className="transition-colors hover:bg-gray-50/50">
@@ -480,7 +489,6 @@
                                       <StatusToggle isPaid={editForm.suppStatus} onChange={(val) => setEditForm({...editForm, suppStatus: val, suppDueDate: val ? '' : editForm.suppDueDate, suppPaidDate: val ? editForm.suppPaidDate : ''})} />
                                     </div>
                                     
-                                    {/* ไฮไลท์: สลับช่องกรอกตามสถานะ */}
                                     {!editForm.suppStatus ? (
                                       <div>
                                         <label className="block text-sm font-bold text-red-600 mb-1">กำหนดชำระเงิน (Due Date)</label>
@@ -512,7 +520,6 @@
                                       <StatusToggle isPaid={editForm.custStatus} onChange={(val) => setEditForm({...editForm, custStatus: val, custDueDate: val ? '' : editForm.custDueDate, custPaidDate: val ? editForm.custPaidDate : ''})} />
                                     </div>
                                     
-                                    {/* ไฮไลท์: สลับช่องกรอกตามสถานะ */}
                                     {!editForm.custStatus ? (
                                       <div>
                                         <label className="block text-sm font-bold text-red-600 mb-1">กำหนดรับเงิน (Due Date)</label>
@@ -534,7 +541,7 @@
                                 
                                 {/* บันทึก */}
                                 <div className="md:col-span-2 flex justify-end mt-2">
-                                  <button onClick={() => handleSavePayment(payment.voucherRaw)} disabled={saving} className={`px-6 py-2 rounded-lg font-bold text-white shadow-sm transition-all ${saving ? 'bg-gray-400 cursor-not-allowed' : 'bg-gray-900 hover:bg-black hover:shadow-md'}`}>
+                                  <button onClick={() => handleSavePayment(payment.uid, payment.voucherRaw)} disabled={saving} className={`px-6 py-2 rounded-lg font-bold text-white shadow-sm transition-all ${saving ? 'bg-gray-400 cursor-not-allowed' : 'bg-gray-900 hover:bg-black hover:shadow-md'}`}>
                                     {saving ? 'กำลังบันทึก...' : 'บันทึกข้อมูล'}
                                   </button>
                                 </div>
