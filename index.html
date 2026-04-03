@@ -14,7 +14,6 @@
     .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     .animate-fade-in { animation: fadeIn 0.4s ease-out forwards; }
-    /* Toggle Switch Styles */
     .toggle-checkbox:checked { right: 0; border-color: #68D391; }
     .toggle-checkbox:checked + .toggle-label { background-color: #68D391; }
     .toggle-checkbox { right: 0; z-index: 1; border-color: #e2e8f0; transition: all 0.3s; }
@@ -42,11 +41,11 @@
     const IconCheckCircle = () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="m9 11 3 3L22 4"/></svg>;
     const IconAlertCircle = () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/></svg>;
 
-    // ลิงก์ Web App (Backend)
+    // ใส่ลิงก์ Web App ตรงนี้ครับ
     const GOOGLE_API_URL = "https://script.google.com/macros/s/AKfycbyVSGSC5sNwOfxwQvTwi0kpBtUsGn6-4SnsBFqqHNBqjGRoVYR0EFXGOMuuAHVUakTE/exec";
 
-    // Component สำหรับ Toggle สวิตช์ Paid/Unpaid
-    const StatusToggle = ({ isPaid, onChange, label }) => (
+    // Component สำหรับสวิตช์ เปิด-ปิด
+    const StatusToggle = ({ isPaid, onChange }) => (
       <div className="flex items-center space-x-3">
         <span className={`text-sm font-bold ${isPaid ? 'text-gray-400' : 'text-red-500'}`}>Unpaid</span>
         <div className="relative inline-block w-12 h-6 align-middle select-none transition duration-200 ease-in">
@@ -57,12 +56,20 @@
       </div>
     );
 
+    // ฟังก์ชันแปลงวันที่ให้สวยงาม (2026-04-03 -> 03/04/2026)
+    const formatDateShow = (dStr) => {
+      if (!dStr) return '';
+      if (dStr.length === 7) return dStr; // กรณีเป็น 2026-04 ให้คงไว้
+      const [y, m, d] = dStr.split('-');
+      if(y && m && d) return `${d}/${m}/${y}`;
+      return dStr;
+    };
+
     function App() {
       const [loading, setLoading] = useState(true);
       const [saving, setSaving] = useState(false);
       const [activeTab, setActiveTab] = useState('overview');
       const [errorMsg, setErrorMsg] = useState("");
-      
       const [opsDate, setOpsDate] = useState(new Date());
       const [expandedPaymentId, setExpandedPaymentId] = useState(null);
       const [editForm, setEditForm] = useState({});
@@ -74,7 +81,7 @@
         themeParks: { fantasea: { initialQuota: 183, used: 0 }, carnivalMagic: { initialQuota: 1200, used: 0 } },
         yearlyReport: [],
         dailyOps: { tours: [], hotels: [] },
-        paymentList: [] // ข้อมูลสำหรับ Payment Due
+        paymentList: [] 
       });
 
       useEffect(() => {
@@ -86,37 +93,44 @@
           const response = await fetch(GOOGLE_API_URL);
           const data = await response.json();
           
-          // เรียงลำดับ paymentList โดยเอาวันที่ดิวที่ใกล้ที่สุดขึ้นก่อน (แยกจาก Paid)
           if(data.paymentList) {
              data.paymentList.sort((a, b) => {
-                // ถ้าจ่ายครบทั้งคู่ เอาไว้ท้ายสุด
-                if (a.suppStatus === 'Paid' && a.custStatus === 'Paid') return 1;
-                if (b.suppStatus === 'Paid' && b.custStatus === 'Paid') return -1;
+                const aAllPaid = a.suppStatus === 'Paid' && a.custStatus === 'Paid';
+                const bAllPaid = b.suppStatus === 'Paid' && b.custStatus === 'Paid';
                 
-                // หาวันที่ใกล้ที่สุดของ A
-                let aDate = new Date(8640000000000000); // Max date
-                if (a.suppStatus !== 'Paid' && a.suppDueDate) aDate = new Date(a.suppDueDate);
-                if (a.custStatus !== 'Paid' && a.custDueDate) {
-                    const cDate = new Date(a.custDueDate);
-                    if(cDate < aDate) aDate = cDate;
-                }
+                // 1. ถ้าจ่ายครบทั้งสองฝั่งแล้ว เอาไว้ท้ายสุด
+                if (aAllPaid && !bAllPaid) return 1;
+                if (!aAllPaid && bAllPaid) return -1;
+                if (aAllPaid && bAllPaid) return 0;
                 
-                // หาวันที่ใกล้ที่สุดของ B
-                let bDate = new Date(8640000000000000);
-                if (b.suppStatus !== 'Paid' && b.suppDueDate) bDate = new Date(b.suppDueDate);
-                if (b.custStatus !== 'Paid' && b.custDueDate) {
-                    const cDate = new Date(b.custDueDate);
-                    if(cDate < bDate) bDate = cDate;
-                }
+                // 2. ถ้ายังไม่จ่าย ให้หาวันที่ "ใกล้ตัวที่สุด" เพื่อนำมาเรียง (Due Date ก่อน ถ้าไม่มีเอา Service Date)
+                const getUrgency = (item) => {
+                    let urgency = new Date('2099-12-31').getTime();
+                    let hasDue = false;
+                    
+                    if (item.suppStatus !== 'Paid' && item.suppDueDate) {
+                        urgency = Math.min(urgency, new Date(item.suppDueDate).getTime());
+                        hasDue = true;
+                    }
+                    if (item.custStatus !== 'Paid' && item.custDueDate) {
+                        urgency = Math.min(urgency, new Date(item.custDueDate).getTime());
+                        hasDue = true;
+                    }
+                    
+                    // ถ้ายังไม่ได้ตั้ง Due Date เลย ให้เรียงตามวันเที่ยว/วันเช็คอิน
+                    if (!hasDue && item.serviceDate) {
+                        urgency = Math.min(urgency, new Date(item.serviceDate).getTime());
+                    }
+                    return urgency;
+                };
                 
-                return aDate - bDate;
+                return getUrgency(a) - getUrgency(b);
              });
           }
           
           setDashboardData(data);
           setLoading(false);
         } catch (err) {
-          console.error("Fetch Error:", err);
           setErrorMsg("เชื่อมต่อข้อมูลไม่สำเร็จ กรุณาลองรีเฟรชหน้าเว็บอีกครั้ง");
           setLoading(false);
         }
@@ -130,9 +144,11 @@
           setEditForm({
             suppStatus: payment.suppStatus === 'Paid',
             suppDueDate: payment.suppDueDate || '',
+            suppPaidDate: payment.suppPaidDate || '',
             suppEmail: payment.suppEmail || false,
             custStatus: payment.custStatus === 'Paid',
             custDueDate: payment.custDueDate || '',
+            custPaidDate: payment.custPaidDate || '',
             custEmail: payment.custEmail || false
           });
         }
@@ -146,31 +162,21 @@
           data: {
             suppStatus: editForm.suppStatus ? 'Paid' : 'Unpaid',
             suppDueDate: editForm.suppStatus ? '' : editForm.suppDueDate,
+            suppPaidDate: editForm.suppStatus ? editForm.suppPaidDate : '',
             suppEmail: editForm.suppEmail,
             custStatus: editForm.custStatus ? 'Paid' : 'Unpaid',
             custDueDate: editForm.custStatus ? '' : editForm.custDueDate,
+            custPaidDate: editForm.custStatus ? editForm.custPaidDate : '',
             custEmail: editForm.custEmail
           }
         };
 
         try {
-          const res = await fetch(GOOGLE_API_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-            body: JSON.stringify(payload)
-          });
+          const res = await fetch(GOOGLE_API_URL, { method: 'POST', body: JSON.stringify(payload) });
           const result = await res.json();
           if(result.status === 'success') {
-             // อัปเดตข้อมูลใน State ทันทีเพื่อให้ UI เปลี่ยนโดยไม่ต้องโหลดใหม่
-             setDashboardData(prev => {
-                const newList = prev.paymentList.map(p => {
-                    if(p.voucherRaw === voucherRaw) {
-                        return { ...p, ...payload.data };
-                    }
-                    return p;
-                });
-                return { ...prev, paymentList: newList };
-             });
+             // โหลดข้อมูลใหม่ทั้งหมดเพื่อเรียงลำดับใหม่ทันที
+             await fetchData();
              setExpandedPaymentId(null);
           }
         } catch (err) {
@@ -205,14 +211,7 @@
         );
       }
 
-      if (errorMsg) {
-        return (
-          <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center text-red-500 p-8 text-center">
-            <h2 className="text-2xl font-bold mb-4">พบข้อผิดพลาด</h2>
-            <p>{errorMsg}</p>
-          </div>
-        );
-      }
+      if (errorMsg) return (<div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center text-red-500 p-8 text-center"><h2 className="text-2xl font-bold mb-4">พบข้อผิดพลาด</h2><p>{errorMsg}</p></div>);
 
       const currentYear = (dashboardData?.currentMonthValue || new Date().getFullYear().toString()).split('-')[0];
       const thisYearReport = (dashboardData?.yearlyReport || []).filter(r => r.month.startsWith(currentYear));
@@ -232,7 +231,6 @@
       const fantaseaRemaining = (dashboardData?.themeParks?.fantasea?.initialQuota || 0) - (dashboardData?.themeParks?.fantasea?.used || 0);
       const carnivalRemaining = (dashboardData?.themeParks?.carnivalMagic?.initialQuota || 0) - (dashboardData?.themeParks?.carnivalMagic?.used || 0);
 
-      // --- Daily Ops Filter ---
       const y = opsDate.getFullYear();
       const m = String(opsDate.getMonth() + 1).padStart(2, '0');
       const d = String(opsDate.getDate()).padStart(2, '0');
@@ -264,31 +262,12 @@
             {/* Navigation Bar */}
             <div className="bg-white border border-gray-200 rounded-xl p-2 mb-8 flex flex-col md:flex-row justify-between items-center shadow-sm">
               <div className="flex space-x-1 overflow-x-auto w-full md:w-auto no-scrollbar">
-                <button 
-                  onClick={() => setActiveTab('overview')}
-                  className={`flex items-center px-4 py-2 rounded-lg text-sm font-bold whitespace-nowrap transition-colors ${activeTab === 'overview' ? 'bg-blue-50 text-blue-600' : 'text-gray-500 hover:bg-gray-50'}`}>
-                  ภาพรวม
-                </button>
-                <button 
-                  onClick={() => setActiveTab('dailyOps')}
-                  className={`flex items-center px-4 py-2 rounded-lg text-sm font-bold whitespace-nowrap transition-colors ${activeTab === 'dailyOps' ? 'bg-blue-50 text-blue-600' : 'text-gray-500 hover:bg-gray-50'}`}>
-                  <IconClipboardList /> <span className="ml-2">Daily Ops</span>
-                </button>
-                <button 
-                  onClick={() => setActiveTab('paymentDue')}
-                  className={`flex items-center px-4 py-2 rounded-lg text-sm font-bold whitespace-nowrap transition-colors ${activeTab === 'paymentDue' ? 'bg-blue-50 text-blue-600' : 'text-gray-500 hover:bg-gray-50'}`}>
-                  <IconCreditCard /> <span className="ml-2">Payment Due</span>
-                </button>
-                <button 
-                  onClick={() => setActiveTab('yearlyReport')}
-                  className={`flex items-center px-4 py-2 rounded-lg text-sm font-bold whitespace-nowrap transition-colors ${activeTab === 'yearlyReport' ? 'bg-blue-50 text-blue-600' : 'text-gray-500 hover:bg-gray-50'}`}>
-                  <IconBarChart2 /> <span className="ml-2">Yearly Report</span>
-                </button>
-                <button className="flex items-center px-4 py-2 text-gray-500 hover:bg-gray-50 rounded-lg text-sm font-semibold transition-colors whitespace-nowrap">
-                  <span className="text-red-500"><IconPin /></span> <span className="ml-2">Other</span> <span className="ml-1 text-gray-400"><IconChevronDown /></span>
-                </button>
+                <button onClick={() => setActiveTab('overview')} className={`flex items-center px-4 py-2 rounded-lg text-sm font-bold whitespace-nowrap transition-colors ${activeTab === 'overview' ? 'bg-blue-50 text-blue-600' : 'text-gray-500 hover:bg-gray-50'}`}>ภาพรวม</button>
+                <button onClick={() => setActiveTab('dailyOps')} className={`flex items-center px-4 py-2 rounded-lg text-sm font-bold whitespace-nowrap transition-colors ${activeTab === 'dailyOps' ? 'bg-blue-50 text-blue-600' : 'text-gray-500 hover:bg-gray-50'}`}><IconClipboardList /> <span className="ml-2">Daily Ops</span></button>
+                <button onClick={() => setActiveTab('paymentDue')} className={`flex items-center px-4 py-2 rounded-lg text-sm font-bold whitespace-nowrap transition-colors ${activeTab === 'paymentDue' ? 'bg-blue-50 text-blue-600' : 'text-gray-500 hover:bg-gray-50'}`}><IconCreditCard /> <span className="ml-2">Payment Due</span></button>
+                <button onClick={() => setActiveTab('yearlyReport')} className={`flex items-center px-4 py-2 rounded-lg text-sm font-bold whitespace-nowrap transition-colors ${activeTab === 'yearlyReport' ? 'bg-blue-50 text-blue-600' : 'text-gray-500 hover:bg-gray-50'}`}><IconBarChart2 /> <span className="ml-2">Yearly Report</span></button>
+                <button className="flex items-center px-4 py-2 text-gray-500 hover:bg-gray-50 rounded-lg text-sm font-semibold transition-colors whitespace-nowrap"><span className="text-red-500"><IconPin /></span> <span className="ml-2">Other</span> <span className="ml-1 text-gray-400"><IconChevronDown /></span></button>
               </div>
-              
               <div className="mt-4 md:mt-0 px-2 w-full md:w-auto">
                 {activeTab !== 'dailyOps' && activeTab !== 'paymentDue' && (
                   <div className="px-4 py-1.5 flex items-center bg-green-50 text-green-700 border border-green-200 rounded-lg shadow-sm">
@@ -300,7 +279,7 @@
               </div>
             </div>
 
-            {/* ส่วนแสดงผล: ภาพรวม หรือ รายปี */}
+            {/* Content: Overview & Yearly */}
             {(activeTab === 'overview' || activeTab === 'yearlyReport') && (
               <>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
@@ -322,57 +301,28 @@
                   <div className="animate-fade-in">
                     <h2 className="text-sm font-extrabold text-gray-800 mb-4">Theme Park Status</h2>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div className="bg-white rounded-xl border border-gray-200 p-8 shadow-sm hover:shadow-md transition-shadow">
-                        <div className="flex items-center mb-8">
-                          <div className="w-12 h-12 bg-gray-50 rounded-full flex items-center justify-center mr-4 text-gray-600 border border-gray-100">
-                            <IconElephant />
-                          </div>
-                          <h3 className="font-semibold text-gray-800">Phuket Fantasea</h3>
-                        </div>
+                      <div className="bg-white rounded-xl border border-gray-200 p-8 shadow-sm">
+                        <div className="flex items-center mb-8"><div className="w-12 h-12 bg-gray-50 rounded-full flex items-center justify-center mr-4 text-gray-600 border border-gray-100"><IconElephant /></div><h3 className="font-semibold text-gray-800">Phuket Fantasea</h3></div>
                         <div className="border-t border-dashed border-gray-200 mb-6"></div>
                         <div className="grid grid-cols-3 gap-4 text-center">
-                          <div>
-                            <p className="text-3xl font-bold text-blue-500 mb-1">{formatNumber(dashboardData?.themeParks?.fantasea?.initialQuota)}</p>
-                            <p className="text-xs font-bold text-gray-500 uppercase">ทั้งหมด</p>
-                          </div>
-                          <div>
-                            <p className={`text-3xl font-bold mb-1 ${(dashboardData?.themeParks?.fantasea?.used || 0) > 0 ? 'text-red-500' : 'text-gray-400'}`}>{formatNumber(dashboardData?.themeParks?.fantasea?.used)}</p>
-                            <p className="text-xs font-bold text-gray-500 uppercase">ใช้ไป</p>
-                          </div>
-                          <div>
-                            <p className={`text-3xl font-bold mb-1 ${fantaseaRemaining < 0 ? 'text-red-500' : 'text-green-500'}`}>{formatNumber(fantaseaRemaining)}</p>
-                            <p className="text-xs font-bold text-gray-500 uppercase">คงเหลือ</p>
-                          </div>
+                          <div><p className="text-3xl font-bold text-blue-500 mb-1">{formatNumber(dashboardData?.themeParks?.fantasea?.initialQuota)}</p><p className="text-xs font-bold text-gray-500 uppercase">ทั้งหมด</p></div>
+                          <div><p className={`text-3xl font-bold mb-1 ${(dashboardData?.themeParks?.fantasea?.used || 0) > 0 ? 'text-red-500' : 'text-gray-400'}`}>{formatNumber(dashboardData?.themeParks?.fantasea?.used)}</p><p className="text-xs font-bold text-gray-500 uppercase">ใช้ไป</p></div>
+                          <div><p className={`text-3xl font-bold mb-1 ${fantaseaRemaining < 0 ? 'text-red-500' : 'text-green-500'}`}>{formatNumber(fantaseaRemaining)}</p><p className="text-xs font-bold text-gray-500 uppercase">คงเหลือ</p></div>
                         </div>
                       </div>
-
-                      <div className="bg-white rounded-xl border border-gray-200 p-8 shadow-sm hover:shadow-md transition-shadow">
-                        <div className="flex items-center mb-8">
-                          <div className="w-12 h-12 bg-red-50 rounded-full flex items-center justify-center mr-4 text-red-500 border border-red-100">
-                            <IconTent />
-                          </div>
-                          <h3 className="font-semibold text-gray-800">Carnival Magic</h3>
-                        </div>
+                      <div className="bg-white rounded-xl border border-gray-200 p-8 shadow-sm">
+                        <div className="flex items-center mb-8"><div className="w-12 h-12 bg-red-50 rounded-full flex items-center justify-center mr-4 text-red-500 border border-red-100"><IconTent /></div><h3 className="font-semibold text-gray-800">Carnival Magic</h3></div>
                         <div className="border-t border-dashed border-gray-200 mb-6"></div>
                         <div className="grid grid-cols-3 gap-4 text-center">
-                          <div>
-                            <p className="text-3xl font-bold text-blue-500 mb-1">{formatNumber(dashboardData?.themeParks?.carnivalMagic?.initialQuota)}</p>
-                            <p className="text-xs font-bold text-gray-500 uppercase">ทั้งหมด</p>
-                          </div>
-                          <div>
-                            <p className={`text-3xl font-bold mb-1 ${(dashboardData?.themeParks?.carnivalMagic?.used || 0) > 0 ? 'text-red-500' : 'text-gray-400'}`}>{formatNumber(dashboardData?.themeParks?.carnivalMagic?.used)}</p>
-                            <p className="text-xs font-bold text-gray-500 uppercase">ใช้ไป</p>
-                          </div>
-                          <div>
-                            <p className={`text-3xl font-bold mb-1 ${carnivalRemaining < 0 ? 'text-red-500' : 'text-green-500'}`}>{formatNumber(carnivalRemaining)}</p>
-                            <p className="text-xs font-bold text-gray-500 uppercase">คงเหลือ</p>
-                          </div>
+                          <div><p className="text-3xl font-bold text-blue-500 mb-1">{formatNumber(dashboardData?.themeParks?.carnivalMagic?.initialQuota)}</p><p className="text-xs font-bold text-gray-500 uppercase">ทั้งหมด</p></div>
+                          <div><p className={`text-3xl font-bold mb-1 ${(dashboardData?.themeParks?.carnivalMagic?.used || 0) > 0 ? 'text-red-500' : 'text-gray-400'}`}>{formatNumber(dashboardData?.themeParks?.carnivalMagic?.used)}</p><p className="text-xs font-bold text-gray-500 uppercase">ใช้ไป</p></div>
+                          <div><p className={`text-3xl font-bold mb-1 ${carnivalRemaining < 0 ? 'text-red-500' : 'text-green-500'}`}>{formatNumber(carnivalRemaining)}</p><p className="text-xs font-bold text-gray-500 uppercase">คงเหลือ</p></div>
                         </div>
                       </div>
                     </div>
                   </div>
                 )}
-
+                
                 {activeTab === 'yearlyReport' && (
                   <div className="animate-fade-in">
                     <h2 className="text-sm font-extrabold text-gray-800 mb-4">รายละเอียดรายเดือน (ปี {parseInt(currentYear) + 543})</h2>
@@ -389,7 +339,7 @@
                           </thead>
                           <tbody className="bg-white divide-y divide-gray-100">
                             {thisYearReport.length === 0 ? (
-                              <tr><td colSpan="4" className="px-6 py-8 text-center text-gray-500">ไม่พบข้อมูลของปีนี้ในหน้า Yearly Report</td></tr>
+                              <tr><td colSpan="4" className="px-6 py-8 text-center text-gray-500">ไม่พบข้อมูลของปีนี้</td></tr>
                             ) : (
                               thisYearReport.map((row, idx) => (
                                 <tr key={idx} className="hover:bg-blue-50 transition-colors">
@@ -409,119 +359,50 @@
               </>
             )}
 
-            {/* ส่วนแสดงผล: Daily Ops */}
+            {/* Content: Daily Ops */}
             {activeTab === 'dailyOps' && (
               <div className="animate-fade-in space-y-6">
                 <div className="flex flex-col sm:flex-row items-center justify-between mb-4 bg-white p-3 rounded-xl border border-gray-200 shadow-sm">
                   <h2 className="text-lg font-extrabold text-gray-800 mb-3 sm:mb-0 ml-2">รายการปฏิบัติงาน</h2>
                   <div className="flex items-center space-x-2 bg-gray-50 p-1.5 rounded-lg border border-gray-200">
-                    <button onClick={() => changeOpsDate(-1)} className="p-2 bg-white hover:bg-gray-100 rounded-md shadow-sm border border-gray-200 transition-colors text-gray-600 flex items-center justify-center" title="ดูเมื่อวาน">
-                      <IconChevronLeft />
-                    </button>
-                    <div className="px-4 py-1 flex flex-col items-center justify-center min-w-[140px]">
-                      <span className="text-sm font-bold text-gray-800">
-                        {opsDate.toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: 'numeric' })}
-                      </span>
-                    </div>
-                    <button onClick={() => changeOpsDate(1)} className="p-2 bg-white hover:bg-gray-100 rounded-md shadow-sm border border-gray-200 transition-colors text-gray-600 flex items-center justify-center" title="ดูวันพรุ่งนี้">
-                      <IconChevronRight />
-                    </button>
-                    <button onClick={() => setOpsDate(new Date())} className="ml-2 px-3 py-1.5 bg-blue-50 text-blue-600 hover:bg-blue-100 font-bold text-xs rounded-md transition-colors border border-blue-100">
-                      วันนี้
-                    </button>
+                    <button onClick={() => changeOpsDate(-1)} className="p-2 bg-white hover:bg-gray-100 rounded-md shadow-sm border border-gray-200 transition-colors text-gray-600"><IconChevronLeft /></button>
+                    <div className="px-4 py-1 flex flex-col items-center justify-center min-w-[140px]"><span className="text-sm font-bold text-gray-800">{opsDate.toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: 'numeric' })}</span></div>
+                    <button onClick={() => changeOpsDate(1)} className="p-2 bg-white hover:bg-gray-100 rounded-md shadow-sm border border-gray-200 transition-colors text-gray-600"><IconChevronRight /></button>
+                    <button onClick={() => setOpsDate(new Date())} className="ml-2 px-3 py-1.5 bg-blue-50 text-blue-600 hover:bg-blue-100 font-bold text-xs rounded-md transition-colors border border-blue-100">วันนี้</button>
                   </div>
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                   <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden flex flex-col h-full">
-                    <div className="bg-blue-50 border-b border-blue-100 px-6 py-4 flex items-center">
-                      <div className="bg-blue-100 text-blue-600 p-2 rounded-lg mr-3">
-                        <IconBus />
-                      </div>
-                      <h3 className="font-bold text-gray-800">ทัวร์ (Tours)</h3>
-                      <span className="ml-auto bg-blue-600 text-white text-xs font-bold px-2 py-1 rounded-full">
-                        {filteredTours.length} รายการ
-                      </span>
-                    </div>
+                    <div className="bg-blue-50 border-b border-blue-100 px-6 py-4 flex items-center"><div className="bg-blue-100 text-blue-600 p-2 rounded-lg mr-3"><IconBus /></div><h3 className="font-bold text-gray-800">ทัวร์ (Tours)</h3><span className="ml-auto bg-blue-600 text-white text-xs font-bold px-2 py-1 rounded-full">{filteredTours.length} รายการ</span></div>
                     <div className="p-4 flex-1">
-                      {filteredTours.length === 0 ? (
-                        <div className="flex flex-col items-center justify-center h-40 text-gray-400">
-                          <IconClipboardList />
-                          <p className="mt-2 text-sm">ไม่มีรายการทัวร์ในวันที่เลือก</p>
-                        </div>
-                      ) : (
-                        <div className="space-y-3">
-                          {filteredTours.map((t, idx) => (
-                            <div key={idx} className="flex items-center p-3 border border-gray-100 rounded-lg hover:border-blue-300 hover:shadow-sm transition-all bg-gray-50/50">
-                              <div className="bg-gray-800 text-white text-xs font-bold px-2 py-1 rounded mr-3 min-w-[3rem] text-center">
-                                {t.voucher}
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <p className="font-bold text-sm text-gray-800 truncate">{t.customer}</p>
-                                <p className="text-xs text-gray-500 truncate">{t.tour}</p>
-                              </div>
-                              <div className="ml-2 flex-shrink-0">
-                                <span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-blue-50 text-blue-700 border border-blue-100">
-                                  {t.agent}
-                                </span>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      )}
+                      {filteredTours.length === 0 ? <div className="flex flex-col items-center justify-center h-40 text-gray-400"><IconClipboardList /><p className="mt-2 text-sm">ไม่มีรายการทัวร์ในวันที่เลือก</p></div> : 
+                        <div className="space-y-3">{filteredTours.map((t, idx) => (
+                          <div key={idx} className="flex items-center p-3 border border-gray-100 rounded-lg hover:border-blue-300 hover:shadow-sm transition-all bg-gray-50/50"><div className="bg-gray-800 text-white text-xs font-bold px-2 py-1 rounded mr-3 min-w-[3rem] text-center">{t.voucher}</div><div className="flex-1 min-w-0"><p className="font-bold text-sm text-gray-800 truncate">{t.customer}</p><p className="text-xs text-gray-500 truncate">{t.tour}</p></div><div className="ml-2 flex-shrink-0"><span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-blue-50 text-blue-700 border border-blue-100">{t.agent}</span></div></div>
+                        ))}</div>}
                     </div>
                   </div>
 
                   <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden flex flex-col h-full">
-                    <div className="bg-purple-50 border-b border-purple-100 px-6 py-4 flex items-center">
-                      <div className="bg-purple-100 text-purple-600 p-2 rounded-lg mr-3">
-                        <IconBuilding />
-                      </div>
-                      <h3 className="font-bold text-gray-800">เช็คอินโรงแรม (Check-ins)</h3>
-                      <span className="ml-auto bg-purple-600 text-white text-xs font-bold px-2 py-1 rounded-full">
-                        {filteredHotels.length} รายการ
-                      </span>
-                    </div>
+                    <div className="bg-purple-50 border-b border-purple-100 px-6 py-4 flex items-center"><div className="bg-purple-100 text-purple-600 p-2 rounded-lg mr-3"><IconBuilding /></div><h3 className="font-bold text-gray-800">เช็คอินโรงแรม (Check-ins)</h3><span className="ml-auto bg-purple-600 text-white text-xs font-bold px-2 py-1 rounded-full">{filteredHotels.length} รายการ</span></div>
                     <div className="p-4 flex-1">
-                      {filteredHotels.length === 0 ? (
-                        <div className="flex flex-col items-center justify-center h-40 text-gray-400">
-                          <IconClipboardList />
-                          <p className="mt-2 text-sm">ไม่มีรายการเช็คอินโรงแรมในวันที่เลือก</p>
-                        </div>
-                      ) : (
-                        <div className="space-y-3">
-                          {filteredHotels.map((h, idx) => (
-                            <div key={idx} className="flex items-center p-3 border border-gray-100 rounded-lg hover:border-purple-300 hover:shadow-sm transition-all bg-gray-50/50">
-                              <div className="bg-gray-800 text-white text-xs font-bold px-2 py-1 rounded mr-3 min-w-[3rem] text-center">
-                                {h.voucher}
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <p className="font-bold text-sm text-gray-800 truncate">{h.customer}</p>
-                                <p className="text-xs text-gray-500 truncate">{h.hotel}</p>
-                                <p className="text-[10px] text-gray-400 mt-0.5">{h.stayDate}</p>
-                              </div>
-                              <div className="ml-2 flex-shrink-0">
-                                <span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-purple-50 text-purple-700 border border-purple-100">
-                                  {h.agent}
-                                </span>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      )}
+                      {filteredHotels.length === 0 ? <div className="flex flex-col items-center justify-center h-40 text-gray-400"><IconClipboardList /><p className="mt-2 text-sm">ไม่มีรายการเช็คอินโรงแรมในวันที่เลือก</p></div> : 
+                        <div className="space-y-3">{filteredHotels.map((h, idx) => (
+                          <div key={idx} className="flex items-center p-3 border border-gray-100 rounded-lg hover:border-purple-300 hover:shadow-sm transition-all bg-gray-50/50"><div className="bg-gray-800 text-white text-xs font-bold px-2 py-1 rounded mr-3 min-w-[3rem] text-center">{h.voucher}</div><div className="flex-1 min-w-0"><p className="font-bold text-sm text-gray-800 truncate">{h.customer}</p><p className="text-xs text-gray-500 truncate">{h.hotel}</p><p className="text-[10px] text-gray-400 mt-0.5">{h.stayDate}</p></div><div className="ml-2 flex-shrink-0"><span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-purple-50 text-purple-700 border border-purple-100">{h.agent}</span></div></div>
+                        ))}</div>}
                     </div>
                   </div>
                 </div>
               </div>
             )}
 
-            {/* ส่วนแสดงผล: Payment Due */}
+            {/* Content: Payment Due */}
             {activeTab === 'paymentDue' && (
               <div className="animate-fade-in">
                 <div className="flex justify-between items-center mb-4">
                   <h2 className="text-lg font-extrabold text-gray-800">รายการค้างชำระ / รอตรวจสอบ</h2>
                   <span className="bg-orange-100 text-orange-700 px-3 py-1 rounded-full text-xs font-bold border border-orange-200">
-                    เรียงตามวันที่ใกล้กำหนดชำระ
+                    รายการที่ใกล้ถึงวันเที่ยว/วันเช็คอิน จะอยู่ด้านบน
                   </span>
                 </div>
 
@@ -529,7 +410,7 @@
                   {paymentList.length === 0 ? (
                     <div className="p-12 text-center text-gray-400">
                       <IconCreditCard className="w-12 h-12 mx-auto mb-3 opacity-50" />
-                      <p>ไม่พบรายการ Booking จากเดือนปัจจุบันเป็นต้นไป</p>
+                      <p>ไม่พบรายการ Booking ที่ค้างชำระในระบบ</p>
                     </div>
                   ) : (
                     <div className="divide-y divide-gray-100">
@@ -538,11 +419,8 @@
                         
                         return (
                           <div key={idx} className="transition-colors hover:bg-gray-50/50">
-                            {/* ส่วนแสดงข้อมูลบรรทัดแรก (คลิกเพื่อกางออกได้) */}
-                            <div 
-                              className="p-4 cursor-pointer flex items-center justify-between"
-                              onClick={() => handleEditPayment(payment)}
-                            >
+                            {/* บรรทัดแสดงสรุป (คลิกเพื่อกาง) */}
+                            <div className="p-4 cursor-pointer flex items-center justify-between" onClick={() => handleEditPayment(payment)}>
                               <div className="flex items-center space-x-4 flex-1">
                                 <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${payment.type === 'Tour' ? 'bg-blue-100 text-blue-600' : 'bg-purple-100 text-purple-600'}`}>
                                   {payment.type === 'Tour' ? <IconBus /> : <IconBuilding />}
@@ -554,25 +432,30 @@
                                     </span>
                                     <h4 className="font-bold text-gray-900 text-sm">{payment.customer}</h4>
                                   </div>
-                                  <p className="text-xs text-gray-500 mt-1">{payment.service} <span className="mx-1">•</span> {payment.agent}</p>
+                                  <p className="text-xs text-gray-500 mt-1">
+                                    {payment.service} <span className="mx-1">•</span> {payment.agent} 
+                                    {payment.serviceDate && (
+                                      <><span className="mx-1">•</span> {payment.type === 'Tour' ? 'เที่ยว: ' : 'เช็คอิน: '} <span className="font-semibold text-gray-700">{formatDateShow(payment.serviceDate)}</span></>
+                                    )}
+                                  </p>
                                 </div>
                               </div>
                               
                               {/* สรุปสถานะย่อๆ */}
                               <div className="flex items-center space-x-4 text-xs font-bold mr-4">
-                                <div className="flex flex-col items-end">
+                                <div className="flex flex-col items-end w-32">
                                   <span className="text-gray-400 mb-1">ซัพพลายเออร์</span>
                                   {payment.suppStatus === 'Paid' ? 
-                                    <span className="flex items-center text-green-500"><IconCheckCircle /> <span className="ml-1">Paid</span></span> : 
-                                    <span className="flex items-center text-red-500"><IconAlertCircle /> <span className="ml-1">{payment.suppDueDate ? `Due: ${payment.suppDueDate}` : 'Unpaid'}</span></span>
+                                    <span className="flex items-center text-green-500"><IconCheckCircle /> <span className="ml-1">Paid {payment.suppPaidDate && `(${formatDateShow(payment.suppPaidDate)})`}</span></span> : 
+                                    <span className="flex items-center text-red-500"><IconAlertCircle /> <span className="ml-1">{payment.suppDueDate ? `Due: ${formatDateShow(payment.suppDueDate)}` : 'Unpaid'}</span></span>
                                   }
                                 </div>
                                 <div className="w-px h-8 bg-gray-200 mx-2"></div>
-                                <div className="flex flex-col items-start">
+                                <div className="flex flex-col items-start w-32">
                                   <span className="text-gray-400 mb-1">ลูกค้า</span>
                                   {payment.custStatus === 'Paid' ? 
-                                    <span className="flex items-center text-green-500"><IconCheckCircle /> <span className="ml-1">Paid</span></span> : 
-                                    <span className="flex items-center text-red-500"><IconAlertCircle /> <span className="ml-1">{payment.custDueDate ? `Due: ${payment.custDueDate}` : 'Unpaid'}</span></span>
+                                    <span className="flex items-center text-green-500"><IconCheckCircle /> <span className="ml-1">Paid {payment.custPaidDate && `(${formatDateShow(payment.custPaidDate)})`}</span></span> : 
+                                    <span className="flex items-center text-red-500"><IconAlertCircle /> <span className="ml-1">{payment.custDueDate ? `Due: ${formatDateShow(payment.custDueDate)}` : 'Unpaid'}</span></span>
                                   }
                                 </div>
                               </div>
@@ -581,107 +464,80 @@
                               </div>
                             </div>
 
-                            {/* ส่วนกรอกข้อมูล (จะกางออกเมื่อถูกคลิก) */}
+                            {/* ส่วนแก้ไขข้อมูล */}
                             {isExpanded && (
                               <div className="bg-gray-50 p-6 border-t border-gray-100 grid grid-cols-1 md:grid-cols-2 gap-8 animate-fade-in shadow-inner">
                                 
-                                {/* ฝั่งซัพพลายเออร์ */}
+                                {/* ซัพพลายเออร์ */}
                                 <div className="bg-white p-5 rounded-lg border border-gray-200 shadow-sm relative overflow-hidden">
                                   <div className="absolute top-0 left-0 w-1 h-full bg-blue-400"></div>
                                   <h3 className="font-bold text-gray-800 border-b border-gray-100 pb-3 mb-4 flex items-center">
                                     <IconBuilding /> <span className="ml-2">การจ่ายเงินซัพพลายเออร์</span>
                                   </h3>
-                                  
                                   <div className="space-y-5">
                                     <div className="flex items-center justify-between">
                                       <span className="text-sm font-medium text-gray-600">สถานะการจ่ายเงิน</span>
-                                      <StatusToggle 
-                                        isPaid={editForm.suppStatus} 
-                                        onChange={(val) => setEditForm({...editForm, suppStatus: val, suppDueDate: val ? '' : editForm.suppDueDate})} 
-                                      />
+                                      <StatusToggle isPaid={editForm.suppStatus} onChange={(val) => setEditForm({...editForm, suppStatus: val, suppDueDate: val ? '' : editForm.suppDueDate, suppPaidDate: val ? editForm.suppPaidDate : ''})} />
                                     </div>
                                     
-                                    <div className={`transition-opacity ${editForm.suppStatus ? 'opacity-40 pointer-events-none' : 'opacity-100'}`}>
-                                      <label className="block text-sm font-medium text-gray-600 mb-1">กำหนดชำระเงิน (Due Date)</label>
-                                      <input 
-                                        type="date" 
-                                        value={editForm.suppDueDate}
-                                        onChange={(e) => setEditForm({...editForm, suppDueDate: e.target.value})}
-                                        className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                        disabled={editForm.suppStatus}
-                                      />
-                                    </div>
+                                    {/* ไฮไลท์: สลับช่องกรอกตามสถานะ */}
+                                    {!editForm.suppStatus ? (
+                                      <div>
+                                        <label className="block text-sm font-bold text-red-600 mb-1">กำหนดชำระเงิน (Due Date)</label>
+                                        <input type="date" value={editForm.suppDueDate} onChange={(e) => setEditForm({...editForm, suppDueDate: e.target.value})} className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-300" />
+                                      </div>
+                                    ) : (
+                                      <div className="animate-fade-in">
+                                        <label className="block text-sm font-bold text-green-600 mb-1">วันที่จ่ายเงินแล้ว (Paid Date)</label>
+                                        <input type="date" value={editForm.suppPaidDate} onChange={(e) => setEditForm({...editForm, suppPaidDate: e.target.value})} className="w-full border border-green-300 bg-green-50 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500" />
+                                      </div>
+                                    )}
 
                                     <div className={`flex items-center ${editForm.suppStatus ? 'opacity-40 pointer-events-none' : 'opacity-100'}`}>
-                                      <input 
-                                        type="checkbox" 
-                                        id="suppEmail" 
-                                        checked={editForm.suppEmail}
-                                        onChange={(e) => setEditForm({...editForm, suppEmail: e.target.checked})}
-                                        className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                                        disabled={editForm.suppStatus}
-                                      />
-                                      <label htmlFor="suppEmail" className="ml-2 text-sm text-gray-600">
-                                        ส่งอีเมลแจ้งเตือนแอดมินล่วงหน้า 1 วัน
-                                      </label>
+                                      <input type="checkbox" id="suppEmail" checked={editForm.suppEmail} onChange={(e) => setEditForm({...editForm, suppEmail: e.target.checked})} className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500" disabled={editForm.suppStatus}/>
+                                      <label htmlFor="suppEmail" className="ml-2 text-sm text-gray-600">ส่งอีเมลแจ้งเตือนแอดมินล่วงหน้า 1 วัน</label>
                                     </div>
                                   </div>
                                 </div>
 
-                                {/* ฝั่งลูกค้า */}
+                                {/* ลูกค้า */}
                                 <div className="bg-white p-5 rounded-lg border border-gray-200 shadow-sm relative overflow-hidden">
                                   <div className="absolute top-0 left-0 w-1 h-full bg-orange-400"></div>
                                   <h3 className="font-bold text-gray-800 border-b border-gray-100 pb-3 mb-4 flex items-center">
                                     <IconCreditCard /> <span className="ml-2">การรับเงินจากลูกค้า</span>
                                   </h3>
-                                  
                                   <div className="space-y-5">
                                     <div className="flex items-center justify-between">
                                       <span className="text-sm font-medium text-gray-600">สถานะการรับเงิน</span>
-                                      <StatusToggle 
-                                        isPaid={editForm.custStatus} 
-                                        onChange={(val) => setEditForm({...editForm, custStatus: val, custDueDate: val ? '' : editForm.custDueDate})} 
-                                      />
+                                      <StatusToggle isPaid={editForm.custStatus} onChange={(val) => setEditForm({...editForm, custStatus: val, custDueDate: val ? '' : editForm.custDueDate, custPaidDate: val ? editForm.custPaidDate : ''})} />
                                     </div>
                                     
-                                    <div className={`transition-opacity ${editForm.custStatus ? 'opacity-40 pointer-events-none' : 'opacity-100'}`}>
-                                      <label className="block text-sm font-medium text-gray-600 mb-1">กำหนดรับเงิน (Due Date)</label>
-                                      <input 
-                                        type="date" 
-                                        value={editForm.custDueDate}
-                                        onChange={(e) => setEditForm({...editForm, custDueDate: e.target.value})}
-                                        className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
-                                        disabled={editForm.custStatus}
-                                      />
-                                    </div>
+                                    {/* ไฮไลท์: สลับช่องกรอกตามสถานะ */}
+                                    {!editForm.custStatus ? (
+                                      <div>
+                                        <label className="block text-sm font-bold text-red-600 mb-1">กำหนดรับเงิน (Due Date)</label>
+                                        <input type="date" value={editForm.custDueDate} onChange={(e) => setEditForm({...editForm, custDueDate: e.target.value})} className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-300" />
+                                      </div>
+                                    ) : (
+                                      <div className="animate-fade-in">
+                                        <label className="block text-sm font-bold text-green-600 mb-1">วันที่รับเงินแล้ว (Paid Date)</label>
+                                        <input type="date" value={editForm.custPaidDate} onChange={(e) => setEditForm({...editForm, custPaidDate: e.target.value})} className="w-full border border-green-300 bg-green-50 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500" />
+                                      </div>
+                                    )}
 
                                     <div className={`flex items-center ${editForm.custStatus ? 'opacity-40 pointer-events-none' : 'opacity-100'}`}>
-                                      <input 
-                                        type="checkbox" 
-                                        id="custEmail" 
-                                        checked={editForm.custEmail}
-                                        onChange={(e) => setEditForm({...editForm, custEmail: e.target.checked})}
-                                        className="w-4 h-4 text-orange-600 border-gray-300 rounded focus:ring-orange-500"
-                                        disabled={editForm.custStatus}
-                                      />
-                                      <label htmlFor="custEmail" className="ml-2 text-sm text-gray-600">
-                                        ส่งอีเมลแจ้งเตือนแอดมินล่วงหน้า 1 วัน
-                                      </label>
+                                      <input type="checkbox" id="custEmail" checked={editForm.custEmail} onChange={(e) => setEditForm({...editForm, custEmail: e.target.checked})} className="w-4 h-4 text-orange-600 border-gray-300 rounded focus:ring-orange-500" disabled={editForm.custStatus}/>
+                                      <label htmlFor="custEmail" className="ml-2 text-sm text-gray-600">ส่งอีเมลแจ้งเตือนแอดมินล่วงหน้า 1 วัน</label>
                                     </div>
                                   </div>
                                 </div>
                                 
-                                {/* ปุ่มบันทึก */}
+                                {/* บันทึก */}
                                 <div className="md:col-span-2 flex justify-end mt-2">
-                                  <button 
-                                    onClick={() => handleSavePayment(payment.voucherRaw)}
-                                    disabled={saving}
-                                    className={`px-6 py-2 rounded-lg font-bold text-white shadow-sm transition-all ${saving ? 'bg-gray-400 cursor-not-allowed' : 'bg-gray-900 hover:bg-black hover:shadow-md'}`}
-                                  >
+                                  <button onClick={() => handleSavePayment(payment.voucherRaw)} disabled={saving} className={`px-6 py-2 rounded-lg font-bold text-white shadow-sm transition-all ${saving ? 'bg-gray-400 cursor-not-allowed' : 'bg-gray-900 hover:bg-black hover:shadow-md'}`}>
                                     {saving ? 'กำลังบันทึก...' : 'บันทึกข้อมูล'}
                                   </button>
                                 </div>
-
                               </div>
                             )}
                           </div>
