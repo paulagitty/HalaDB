@@ -59,7 +59,7 @@
     // ฟังก์ชันแปลงวันที่ให้สวยงาม (2026-04-03 -> 03/04/2026)
     const formatDateShow = (dStr) => {
       if (!dStr) return '';
-      if (dStr.length === 7) return dStr; // กรณีเป็น 2026-04 ให้คงไว้
+      if (dStr.length === 7) return dStr; // กรณีหลุดมา ให้โชว์เดิมๆ
       const parts = dStr.split('-');
       if(parts.length === 3) return `${parts[2]}/${parts[1]}/${parts[0]}`;
       return dStr;
@@ -387,7 +387,16 @@
                     <div className="p-4 flex-1">
                       {filteredTours.length === 0 ? <div className="flex flex-col items-center justify-center h-40 text-gray-400"><IconClipboardList /><p className="mt-2 text-sm">ไม่มีรายการทัวร์ในวันที่เลือก</p></div> : 
                         <div className="space-y-3">{filteredTours.map((t, idx) => (
-                          <div key={idx} className="flex items-center p-3 border border-gray-100 rounded-lg hover:border-blue-300 hover:shadow-sm transition-all bg-gray-50/50"><div className="bg-gray-800 text-white text-xs font-bold px-2 py-1 rounded mr-3 min-w-[3rem] text-center">{t.voucher}</div><div className="flex-1 min-w-0"><p className="font-bold text-sm text-gray-800 truncate">{t.customer}</p><p className="text-xs text-gray-500 truncate">{t.tour}</p></div><div className="ml-2 flex-shrink-0"><span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-blue-50 text-blue-700 border border-blue-100">{t.agent}</span></div></div>
+                          <div key={idx} className="flex items-center p-3 border border-gray-100 rounded-lg hover:border-blue-300 hover:shadow-sm transition-all bg-gray-50/50">
+                            <div className="bg-gray-800 text-white text-xs font-bold px-2 py-1 rounded mr-3 min-w-[3rem] text-center">{t.voucher}</div>
+                            <div className="flex-1 min-w-0">
+                              <p className="font-bold text-base text-gray-800 truncate">{t.customer}</p>
+                              <p className="text-sm text-gray-500 truncate">{t.tour}</p>
+                            </div>
+                            <div className="ml-2 flex-shrink-0">
+                              <span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-blue-50 text-blue-700 border border-blue-100">{t.agent}</span>
+                            </div>
+                          </div>
                         ))}</div>}
                     </div>
                   </div>
@@ -397,7 +406,17 @@
                     <div className="p-4 flex-1">
                       {filteredHotels.length === 0 ? <div className="flex flex-col items-center justify-center h-40 text-gray-400"><IconClipboardList /><p className="mt-2 text-sm">ไม่มีรายการเช็คอินโรงแรมในวันที่เลือก</p></div> : 
                         <div className="space-y-3">{filteredHotels.map((h, idx) => (
-                          <div key={idx} className="flex items-center p-3 border border-gray-100 rounded-lg hover:border-purple-300 hover:shadow-sm transition-all bg-gray-50/50"><div className="bg-gray-800 text-white text-xs font-bold px-2 py-1 rounded mr-3 min-w-[3rem] text-center">{h.voucher}</div><div className="flex-1 min-w-0"><p className="font-bold text-sm text-gray-800 truncate">{h.customer}</p><p className="text-xs text-gray-500 truncate">{h.hotel}</p><p className="text-[10px] text-gray-400 mt-0.5">{h.stayDate}</p></div><div className="ml-2 flex-shrink-0"><span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-purple-50 text-purple-700 border border-purple-100">{h.agent}</span></div></div>
+                          <div key={idx} className="flex items-center p-3 border border-gray-100 rounded-lg hover:border-purple-300 hover:shadow-sm transition-all bg-gray-50/50">
+                            <div className="bg-gray-800 text-white text-xs font-bold px-2 py-1 rounded mr-3 min-w-[3rem] text-center">{h.voucher}</div>
+                            <div className="flex-1 min-w-0">
+                              <p className="font-bold text-base text-gray-800 truncate">{h.customer}</p>
+                              <p className="text-sm text-gray-500 truncate">{h.hotel}</p>
+                              <p className="text-xs text-gray-400 mt-0.5">{h.stayDate}</p>
+                            </div>
+                            <div className="ml-2 flex-shrink-0">
+                              <span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-purple-50 text-purple-700 border border-purple-100">{h.agent}</span>
+                            </div>
+                          </div>
                         ))}</div>}
                     </div>
                   </div>
@@ -436,32 +455,35 @@
                                 </div>
                                 <div className="flex-1">
                                   <div className="flex items-center space-x-2">
-                                    <span className="bg-gray-800 text-white text-[10px] font-bold px-1.5 py-0.5 rounded">
+                                    <span className="bg-gray-800 text-white text-xs font-bold px-2 py-0.5 rounded">
                                       {payment.voucher}
                                     </span>
-                                    <h4 className="font-bold text-gray-900 text-sm">{payment.customer}</h4>
+                                    <h4 className="font-bold text-gray-900 text-base">{payment.customer}</h4>
                                   </div>
-                                  <p className="text-xs text-gray-500 mt-1">
-                                    {payment.service} <span className="mx-1">•</span> {payment.agent} 
-                                    {payment.serviceDate && (
-                                      <><span className="mx-1">•</span> {payment.type === 'Tour' ? 'เที่ยว: ' : 'เช็คอิน: '} <span className="font-semibold text-gray-700">{formatDateShow(payment.serviceDate)}</span></>
+                                  <p className="text-sm text-gray-600 mt-1.5">
+                                    {payment.service} <span className="mx-1.5 text-gray-400">•</span> {payment.agent} 
+                                    {payment.type === 'Tour' && payment.dateStr && (
+                                      <><span className="mx-1.5 text-gray-400">•</span> เที่ยว: <span className="font-semibold text-gray-800">{formatDateShow(payment.dateStr)}</span></>
+                                    )}
+                                    {payment.type === 'Hotel' && payment.stayDate && (
+                                      <><span className="mx-1.5 text-gray-400">•</span> เข้าพัก: <span className="font-semibold text-gray-800">{payment.stayDate}</span></>
                                     )}
                                   </p>
                                 </div>
                               </div>
                               
                               {/* สรุปสถานะย่อๆ */}
-                              <div className="flex items-center space-x-4 text-xs font-bold mr-4">
-                                <div className="flex flex-col items-end w-32">
-                                  <span className="text-gray-400 mb-1">ซัพพลายเออร์</span>
+                              <div className="flex items-center space-x-4 text-sm font-bold mr-4">
+                                <div className="flex flex-col items-end w-36">
+                                  <span className="text-gray-400 mb-1 text-xs">ซัพพลายเออร์</span>
                                   {payment.suppStatus === 'Paid' ? 
                                     <span className="flex items-center text-green-500"><IconCheckCircle /> <span className="ml-1">Paid {payment.suppPaidDate && `(${formatDateShow(payment.suppPaidDate)})`}</span></span> : 
                                     <span className="flex items-center text-red-500"><IconAlertCircle /> <span className="ml-1">{payment.suppDueDate ? `Due: ${formatDateShow(payment.suppDueDate)}` : 'Unpaid'}</span></span>
                                   }
                                 </div>
-                                <div className="w-px h-8 bg-gray-200 mx-2"></div>
-                                <div className="flex flex-col items-start w-32">
-                                  <span className="text-gray-400 mb-1">ลูกค้า</span>
+                                <div className="w-px h-10 bg-gray-200 mx-2"></div>
+                                <div className="flex flex-col items-start w-36">
+                                  <span className="text-gray-400 mb-1 text-xs">ลูกค้า</span>
                                   {payment.custStatus === 'Paid' ? 
                                     <span className="flex items-center text-green-500"><IconCheckCircle /> <span className="ml-1">Paid {payment.custPaidDate && `(${formatDateShow(payment.custPaidDate)})`}</span></span> : 
                                     <span className="flex items-center text-red-500"><IconAlertCircle /> <span className="ml-1">{payment.custDueDate ? `Due: ${formatDateShow(payment.custDueDate)}` : 'Unpaid'}</span></span>
