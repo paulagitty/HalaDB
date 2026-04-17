@@ -305,9 +305,18 @@
                             target="_blank" 
                             rel="noopener noreferrer"
                             onClick={() => setIsOtherMenuOpen(false)}
-                            className="px-4 py-3 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 font-bold transition-colors cursor-pointer block"
+                            className="px-4 py-3 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 font-bold transition-colors border-b border-gray-50 cursor-pointer block"
                           >
                             Taxi Booking
+                          </a>
+                          <a 
+                            href="https://script.google.com/macros/s/AKfycbwalsBYKbN2QaMM0Dy6FhPNfx-TZq_vDec6Hugc1Phh32KRn7_oT7iUkVbEY9SElI3y/exec"
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            onClick={() => setIsOtherMenuOpen(false)}
+                            className="px-4 py-3 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 font-bold transition-colors cursor-pointer block"
+                          >
+                            Create Package
                           </a>
                         </div>
                       </div>
@@ -432,7 +441,7 @@
                             <div className="bg-gray-800 text-white text-xs font-bold px-2 py-1 rounded mr-3 min-w-[3rem] text-center">{t.voucher}</div>
                             <div className="flex-1 min-w-0">
                               <p className="font-bold text-base text-gray-800 truncate">{t.customer}</p>
-                              {/* --- [แก้ไข] เพิ่มการแสดงชื่อทัวร์ , บริษัท , เวลารับ ตรงนี้ --- */}
+                              {/* --- เพิ่มการแสดงชื่อทัวร์ , บริษัท , เวลารับ ตรงนี้ --- */}
                               <p className="text-sm text-blue-600 truncate mt-0.5 font-semibold">
                                 {[t.tourName || t.service || 'ไม่ระบุทริป', t.companyName, t.pickupTime].filter(Boolean).join(' , ')}
                               </p>
@@ -506,7 +515,6 @@
                                     <h4 className="font-bold text-gray-900 text-base">{payment.customer}</h4>
                                   </div>
                                   <p className="text-sm text-gray-600 mt-1.5">
-                                    {/* --- [แก้ไข] ดึง Company กับ PickupTime มาโชว์ในหน้านี้ด้วย ถ้าเป็นทัวร์ --- */}
                                     <span className="font-medium text-gray-800">
                                       {payment.type === 'Tour' ? 
                                         ([payment.tourName || payment.service, payment.companyName, payment.pickupTime].filter(Boolean).join(' , ')) 
