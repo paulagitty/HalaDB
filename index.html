@@ -669,9 +669,9 @@
                           <table className="min-w-full divide-y divide-gray-200 text-sm">
                             <thead>
                               <tr className="bg-gray-800">
-                                <th className="px-5 py-3 text-left text-xs font-bold text-gray-300 uppercase">เดือน</th>
+                                <th className="px-6 py-3 text-left text-xs font-bold text-gray-300 uppercase min-w-[200px]">เดือน</th>
                                 {COMPARISON_YEARS.map((year, yi) => (
-                                  <th key={year} className={`px-5 py-3 text-right text-xs font-bold uppercase ${yi === 0 ? 'bg-blue-700 text-white' : 'text-gray-300'}`}>
+                                  <th key={year} className={`px-3 py-3 text-right text-xs font-bold uppercase min-w-[110px] ${yi === 0 ? 'bg-blue-700 text-white' : 'text-gray-300'}`}>
                                     ปี {parseInt(year) + 543}
                                     {yi === 0 && <span className="block text-[10px] font-normal text-blue-200 mt-0.5">จาก Sheets</span>}
                                   </th>
@@ -681,9 +681,29 @@
                             <tbody className="bg-white divide-y divide-gray-100">
                               {[1,2,3,4,5,6,7,8,9,10,11,12].map(monthNum => {
                                 const labelKey = `${currentYear}-${String(monthNum).padStart(2,'0')}`;
+
+                                // --- Auto trend: เปรียบเทียบปีนี้ vs ปีก่อน ---
+                                const prevYear = COMPARISON_YEARS[1];
+                                const prevMKey = `${prevYear}-${String(monthNum).padStart(2,'0')}`;
+                                const currApiRow = currentYearApiReport.find(r => r.month === labelKey);
+                                const currVal = currApiRow ? (currApiRow.totalProfit || 0) : 0;
+                                const prevMd = manualData[prevMKey];
+                                const prevVal = prevMd
+                                  ? ((prevMd.totalOnly != null && prevMd.totalOnly !== '') ? Number(prevMd.totalOnly) : (Number(prevMd.tourProfit)||0)+(Number(prevMd.hotelProfit)||0))
+                                  : 0;
+                                const trend = (currVal > 0 && prevVal > 0)
+                                  ? (currVal > prevVal ? 'up' : currVal < prevVal ? 'down' : 'neutral')
+                                  : 'neutral';
+
                                 return (
-                                  <tr key={monthNum} className="hover:bg-gray-50/70 transition-colors">
-                                    <td className="px-5 py-3 whitespace-nowrap font-bold text-gray-700 text-sm">{getMonthName(labelKey)}</td>
+                                  <tr key={monthNum} className={`transition-colors ${trend === 'up' ? 'hover:bg-green-50' : trend === 'down' ? 'hover:bg-red-50' : 'hover:bg-gray-50/70'}`}>
+                                    <td className={`px-6 py-3 whitespace-nowrap font-bold text-sm border-l-4 ${trend === 'up' ? 'border-l-green-400 text-green-700' : trend === 'down' ? 'border-l-red-400 text-red-700' : 'border-l-transparent text-gray-700'}`}>
+                                      <span className="flex items-center gap-1.5">
+                                        {trend === 'up' && <span className="text-green-500 text-xs">▲</span>}
+                                        {trend === 'down' && <span className="text-red-400 text-xs">▼</span>}
+                                        {getMonthName(labelKey)}
+                                      </span>
+                                    </td>
                                     {COMPARISON_YEARS.map((year, yi) => {
                                       const mKey = `${year}-${String(monthNum).padStart(2,'0')}`;
                                       const isCurrentYr = yi === 0;
@@ -695,12 +715,13 @@
                                         const md = manualData[mKey];
                                         if (md) value = (md.totalOnly != null && md.totalOnly !== '') ? Number(md.totalOnly) : (Number(md.tourProfit)||0)+(Number(md.hotelProfit)||0);
                                       }
+                                      const currentYrColor = trend === 'up' ? 'text-green-600 font-bold' : trend === 'down' ? 'text-red-500 font-bold' : 'text-blue-700 font-semibold';
                                       return (
-                                        <td key={year} className={`px-5 py-3 whitespace-nowrap text-right ${isCurrentYr ? 'bg-blue-50/60 font-semibold text-blue-700' : 'text-gray-700'}`}>
+                                        <td key={year} className={`px-3 py-3 whitespace-nowrap text-right ${isCurrentYr ? `${trend === 'up' ? 'bg-green-50/70' : trend === 'down' ? 'bg-red-50/60' : 'bg-blue-50/60'} ${currentYrColor}` : 'text-gray-700'}`}>
                                           {isCurrentYr || !isEditingComparison ? (
-                                            <span className={(!value || value === 0) ? 'text-gray-300' : ''}>{value != null && value > 0 ? formatCurrency(value) : '—'}</span>
+                                            <span className={(!value || value === 0) ? 'text-gray-300' : ''}>{value != null && value > 0 ? formatNumber(value) : '—'}</span>
                                           ) : (
-                                            <input type="number" min="0" step="1" value={comparisonEditForm[mKey] ?? ''} onChange={e => setComparisonEditForm(f => ({...f, [mKey]: e.target.value}))} placeholder="0" className="w-32 text-right border border-indigo-300 rounded-md px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-white" />
+                                            <input type="number" min="0" step="1" value={comparisonEditForm[mKey] ?? ''} onChange={e => setComparisonEditForm(f => ({...f, [mKey]: e.target.value}))} placeholder="0" className="w-28 text-right border border-indigo-300 rounded-md px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-white" />
                                           )}
                                         </td>
                                       );
@@ -711,7 +732,7 @@
                             </tbody>
                             <tfoot>
                               <tr className="bg-gray-800">
-                                <td className="px-5 py-4 font-extrabold text-white text-sm">TOTAL</td>
+                                <td className="px-6 py-4 font-extrabold text-white text-sm">TOTAL</td>
                                 {COMPARISON_YEARS.map((year, yi) => {
                                   let total = 0;
                                   if (yi === 0) {
@@ -723,7 +744,7 @@
                                       if (md) total += (md.totalOnly != null && md.totalOnly !== '') ? Number(md.totalOnly) : (Number(md.tourProfit)||0)+(Number(md.hotelProfit)||0);
                                     }
                                   }
-                                  return <td key={year} className={`px-5 py-4 text-right font-extrabold text-sm ${yi === 0 ? 'bg-blue-700 text-yellow-300' : 'text-white'}`}>{formatCurrency(total)}</td>;
+                                  return <td key={year} className={`px-3 py-4 text-right font-extrabold text-sm ${yi === 0 ? 'bg-blue-700 text-yellow-300' : 'text-white'}`}>{formatNumber(total)}</td>;
                                 })}
                               </tr>
                             </tfoot>
