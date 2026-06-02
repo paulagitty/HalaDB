@@ -300,11 +300,12 @@
         const socialSec = parseFloat(src?.socialSec) || 0;
         const others = parseFloat(src?.others) || 0;
         const othersDesc = src?.othersDesc || '';
-        const totalExpense = salary + socialSec + others;
+        const vat = parseFloat(src?.vat) || 0;
+        const totalExpense = salary + socialSec + others + vat;
         const afterExpense = totalRevenue - totalExpense;
         const commission = afterExpense > 0 ? afterExpense * 0.05 : 0;
         const netCompany = afterExpense - commission;
-        return { month, totalRevenue, salary, socialSec, others, othersDesc, totalExpense, afterExpense, commission, netCompany };
+        return { month, totalRevenue, salary, socialSec, others, othersDesc, vat, totalExpense, afterExpense, commission, netCompany };
       });
       const displayAccData = isEditingAccounting ? accMonthData : accMonthData.filter(r => r.totalRevenue > 0 || r.totalExpense > 0);
       const accTotals = accMonthData.reduce((t, r) => ({
@@ -313,16 +314,17 @@
         salary: t.salary + r.salary,
         socialSec: t.socialSec + r.socialSec,
         others: t.others + r.others,
+        vat: t.vat + r.vat,
         afterExpense: t.afterExpense + r.afterExpense,
         commission: t.commission + r.commission,
         netCompany: t.netCompany + r.netCompany
-      }), { revenue: 0, expense: 0, salary: 0, socialSec: 0, others: 0, afterExpense: 0, commission: 0, netCompany: 0 });
+      }), { revenue: 0, expense: 0, salary: 0, socialSec: 0, others: 0, vat: 0, afterExpense: 0, commission: 0, netCompany: 0 });
 
       const startAccountingEdit = () => {
         const form = {};
         MONTH_KEYS.forEach(month => {
           const acc = accountingData[month] || {};
-          form[month] = { salary: acc.salary ?? '', socialSec: acc.socialSec ?? '', others: acc.others ?? '', othersDesc: acc.othersDesc || '' };
+          form[month] = { salary: acc.salary ?? '', socialSec: acc.socialSec ?? '', others: acc.others ?? '', othersDesc: acc.othersDesc || '', vat: acc.vat ?? '' };
         });
         setAccountingEditForm(form);
         setIsEditingAccounting(true);
@@ -335,10 +337,11 @@
           const socialSec = parseFloat(f.socialSec) || 0;
           const others = parseFloat(f.others) || 0;
           const othersDesc = (f.othersDesc || '').trim();
-          if (salary === 0 && socialSec === 0 && others === 0 && !othersDesc) {
+          const vat = parseFloat(f.vat) || 0;
+          if (salary === 0 && socialSec === 0 && others === 0 && vat === 0 && !othersDesc) {
             delete updated[month];
           } else {
-            updated[month] = { salary, socialSec, others, othersDesc };
+            updated[month] = { salary, socialSec, others, othersDesc, vat };
           }
         });
         setAccountingData(updated);
@@ -818,6 +821,7 @@
                           <th className="px-4 py-3 text-right text-xs font-bold text-red-400 uppercase">เงินเดือน</th>
                           <th className="px-4 py-3 text-right text-xs font-bold text-red-400 uppercase">ประกันสังคม</th>
                           <th className="px-4 py-3 text-right text-xs font-bold text-red-400 uppercase">อื่นๆ</th>
+                          <th className="px-4 py-3 text-right text-xs font-bold text-red-400 uppercase">VAT</th>
                           <th className="px-4 py-3 text-right text-xs font-bold text-red-500 uppercase bg-red-50">รวมค่าใช้จ่าย</th>
                           <th className="px-4 py-3 text-right text-xs font-bold text-gray-600 uppercase">คงเหลือ</th>
                           <th className="px-4 py-3 text-right text-xs font-bold text-amber-500 uppercase bg-amber-50">Comm 5%</th>
@@ -826,7 +830,7 @@
                       </thead>
                       <tbody className="bg-white divide-y divide-gray-100">
                         {displayAccData.length === 0 ? (
-                          <tr><td colSpan="9" className="px-6 py-10 text-center text-gray-400">ยังไม่มีข้อมูล กดปุ่ม "กรอกค่าใช้จ่าย" เพื่อเริ่มต้น</td></tr>
+                          <tr><td colSpan="10" className="px-6 py-10 text-center text-gray-400">ยังไม่มีข้อมูล กดปุ่ม "กรอกค่าใช้จ่าย" เพื่อเริ่มต้น</td></tr>
                         ) : (
                           displayAccData.map((row, idx) => (
                             <tr key={idx} className="hover:bg-gray-50/70 transition-colors">
@@ -862,6 +866,13 @@
                                 )}
                               </td>
 
+                              {/* VAT */}
+                              <td className="px-4 py-3 whitespace-nowrap text-right">
+                                {isEditingAccounting ? (
+                                  <input type="number" min="0" step="1" value={accountingEditForm[row.month]?.vat ?? ''} onChange={e => setAccountingEditForm(f => ({...f, [row.month]: {...f[row.month], vat: e.target.value}}))} placeholder="0" className="w-28 text-right border border-red-200 rounded-md px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-red-300 bg-white" />
+                                ) : <span className={row.vat > 0 ? 'text-red-500 font-medium' : 'text-gray-300'}>{row.vat > 0 ? formatCurrency(row.vat) : '—'}</span>}
+                              </td>
+
                               {/* รวมค่าใช้จ่าย */}
                               <td className="px-4 py-3 whitespace-nowrap text-right font-semibold text-red-500 bg-red-50/40">{row.totalExpense > 0 ? formatCurrency(row.totalExpense) : '—'}</td>
 
@@ -885,6 +896,7 @@
                             <td className="px-4 py-4 text-right font-extrabold text-red-300">{formatCurrency(accTotals.salary)}</td>
                             <td className="px-4 py-4 text-right font-extrabold text-red-300">{formatCurrency(accTotals.socialSec)}</td>
                             <td className="px-4 py-4 text-right font-extrabold text-red-300">{formatCurrency(accTotals.others)}</td>
+                            <td className="px-4 py-4 text-right font-extrabold text-red-300">{formatCurrency(accTotals.vat)}</td>
                             <td className="px-4 py-4 text-right font-extrabold text-red-300">{formatCurrency(accTotals.expense)}</td>
                             <td className="px-4 py-4 text-right font-extrabold">{formatCurrency(accTotals.afterExpense)}</td>
                             <td className="px-4 py-4 text-right font-extrabold text-yellow-300">{formatCurrency(accTotals.commission)}</td>
