@@ -1,3 +1,178 @@
+// --- Icons ---
+const IconClipboardList = () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 11h4"/><path d="M12 16h4"/><path d="M8 11h.01"/><path d="M8 16h.01"/></svg>;
+const IconCreditCard = () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/></svg>;
+const IconBarChart2 = () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" x2="18" y1="20" y2="10"/><line x1="12" x2="12" y1="20" y2="4"/><line x1="6" x2="6" y1="20" y2="14"/></svg>;
+const IconPin = () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" x2="12" y1="17" y2="22"/><path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.68V6a3 3 0 0 0-3-3 3 3 0 0 0-3 3v4.68a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24Z"/></svg>;
+const IconChevronDown = () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>;
+const IconElephant = () => <svg viewBox="0 0 64 64" width="28" height="28" fill="currentColor"><path d="M58,34.4c-0.8-1.4-2.1-2.4-3.6-3c-1.5-0.6-3.1-0.6-4.6,0c-0.8,0.3-1.4,0.8-2,1.4c-1-1.2-2.5-1.9-4.2-1.9c-2,0-3.8,1-4.8,2.5 c-1-1.1-2.4-1.8-4-1.8c-2,0-3.8,1.1-4.7,2.8c-1.1-1.6-2.9-2.7-5-2.7c-2.3,0-4.3,1.3-5.3,3.3C18.6,35,17,35,16,35c-1.1,0-2,0.9-2,2 s0.9,2,2,2c2.1,0,4-1.3,4.9-3.2c0.3-0.7,1-1.1,1.8-1.1c1.2,0,2.2,1,2.2,2.2c0,3.3,2.7,6,6,6c0.5,0,1,0,1.5-0.1 c1.1,2.1,3.4,3.5,6,3.5c1.6,0,3.1-0.6,4.2-1.6c1.1,1,2.6,1.6,4.2,1.6c2.6,0,4.8-1.4,6-3.5c0.5,0.1,1,0.1,1.5,0.1c3.3,0,6-2.7,6-6 C60,37.3,59.2,35.7,58,34.4z M49.8,35.4c0.5-0.2,1.1-0.2,1.6,0c0.6,0.2,1,0.7,1.2,1.3c0.1,0.3,0.1,0.6,0,0.9c-0.1,0.3-0.3,0.5-0.5,0.7 c-0.2,0.2-0.5,0.3-0.8,0.4c-0.3,0.1-0.6,0.1-0.9,0c-0.6-0.2-1-0.7-1.2-1.3C49.1,36.5,49.3,35.8,49.8,35.4z"/><path d="M12,28c0-8.8,7.2-16,16-16s16,7.2,16,16v2h4v-2c0-11-9-20-20-20S8,17,8,28v2h4V28z"/></svg>;
+const IconTent = () => <svg viewBox="0 0 64 64" width="28" height="28" fill="currentColor"><path d="M32,4L4,24v36h56V24L32,4z M32,10.3l20,14.3v4.1L32,14.4L12,28.7v-4.1L32,10.3z M12,34.4l20-14.3l20,14.3v21.6H12V34.4z"/><rect x="28" y="42" width="8" height="14"/></svg>;
+const IconBus = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M8 6v6"/><path d="M15 6v6"/><path d="M2 12h19.6"/><path d="M18 18h3s.5-1.7.8-2.8c.1-.4.2-.8.2-1.2 0-.4-.1-.8-.2-1.2l-1.4-5C20.1 6.8 19.1 6 18 6H4a2 2 0 0 0-2 2v10h3"/><circle cx="7" cy="18" r="2"/><circle cx="17" cy="18" r="2"/></svg>;
+const IconBuilding = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="4" y="2" width="16" height="20" rx="2" ry="2"/><path d="M9 22v-4h6v4"/><path d="M8 6h.01"/><path d="M16 6h.01"/><path d="M12 6h.01"/><path d="M12 10h.01"/><path d="M12 14h.01"/><path d="M16 10h.01"/><path d="M16 14h.01"/><path d="M8 10h.01"/><path d="M8 14h.01"/></svg>;
+const IconChevronLeft = () => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>;
+const IconAccounting = () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/><path d="M14 8H8"/><path d="M16 12H8"/><path d="M13 16H8"/></svg>;
+const IconChevronRight = () => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6"/></svg>;
+const IconCheckCircle = () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="m9 11 3 3L22 4"/></svg>;
+const IconAlertCircle = () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/></svg>;
+
+// --- Utils ---
+const GOOGLE_API_URL = "https://script.google.com/macros/s/AKfycbyVSGSC5sNwOfxwQvTwi0kpBtUsGn6-4SnsBFqqHNBqjGRoVYR0EFXGOMuuAHVUakTE/exec";
+const formatDateShow = (dStr) => {
+  if (!dStr) return '';
+  if (dStr.length === 7) return dStr;
+  const parts = dStr.split('-');
+  if(parts.length === 3) return `${parts[2]}/${parts[1]}/${parts[0]}`;
+  return dStr;
+};
+
+// --- Common Components ---
+const StatusToggle = ({ isPaid, onChange }) => (
+  <div className="flex items-center space-x-3">
+    <span className={`text-sm font-bold ${isPaid ? 'text-gray-400' : 'text-red-500'}`}>Unpaid</span>
+    <div className="relative inline-block w-12 h-6 align-middle select-none transition duration-200 ease-in">
+      <input type="checkbox" checked={isPaid} onChange={(e) => onChange(e.target.checked)} className="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer"/>
+      <label className="toggle-label block overflow-hidden h-6 rounded-full bg-gray-300 cursor-pointer"></label>
+    </div>
+    <span className={`text-sm font-bold ${isPaid ? 'text-green-500' : 'text-gray-400'}`}>Paid</span>
+  </div>
+);
+const LoadingState = () => (
+  <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center">
+    <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-4"></div>
+    <div className="text-xl font-semibold text-gray-500">กำลังดึงข้อมูลล่าสุดจาก Google Sheets...</div>
+  </div>
+);
+const ErrorState = ({ message }) => (
+  <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center text-red-500 p-8 text-center">
+    <h2 className="text-2xl font-bold mb-4">พบข้อผิดพลาด</h2>
+    <p>{message}</p>
+  </div>
+);
+
+// --- Layout Components ---
+const DashboardHeader = ({ activeTab, activeYear }) => (
+  <div className="mb-6 flex justify-between items-end">
+    <div>
+      <h1 className="text-2xl font-bold text-gray-900">Executive Dashboard</h1>
+      <p className="text-sm text-gray-600 mt-1">
+        {activeTab === 'overview' ? 'ภาพรวมประจำเดือนปัจจุบัน' :
+         activeTab === 'yearlyReport' ? `รายงานสรุปรายปี (Yearly Report ${parseInt(activeYear) + 543})` :
+         activeTab === 'accounting' ? `สรุปบัญชีรายเดือน (Accounting ${parseInt(activeYear) + 543})` :
+         activeTab === 'paymentDue' ? 'ระบบจัดการกำหนดชำระเงิน (Payment Due)' :
+         'รายงานการดำเนินงานประจำวัน (Daily Operations)'}
+      </p>
+    </div>
+  </div>
+);
+const DashboardNav = ({
+  activeTab,
+  activeYear,
+  currentYear,
+  currentMonthText,
+  isOtherMenuOpen,
+  setActiveTab,
+  setIsOtherMenuOpen
+}) => (
+  <div className="bg-white border border-gray-200 rounded-xl p-2 mb-8 flex flex-col md:flex-row justify-between items-center shadow-sm relative z-40">
+    <div className="flex items-center w-full md:w-auto overflow-visible">
+      <div className="flex space-x-1 overflow-x-auto no-scrollbar w-full">
+        <button onClick={() => setActiveTab('overview')} className={`flex items-center px-4 py-2 rounded-lg text-sm font-bold whitespace-nowrap transition-colors ${activeTab === 'overview' ? 'bg-blue-50 text-blue-600' : 'text-gray-500 hover:bg-gray-50'}`}>ภาพรวม</button>
+        <button onClick={() => setActiveTab('dailyOps')} className={`flex items-center px-4 py-2 rounded-lg text-sm font-bold whitespace-nowrap transition-colors ${activeTab === 'dailyOps' ? 'bg-blue-50 text-blue-600' : 'text-gray-500 hover:bg-gray-50'}`}><IconClipboardList /> <span className="ml-2">Daily Ops</span></button>
+        <button onClick={() => setActiveTab('paymentDue')} className={`flex items-center px-4 py-2 rounded-lg text-sm font-bold whitespace-nowrap transition-colors ${activeTab === 'paymentDue' ? 'bg-blue-50 text-blue-600' : 'text-gray-500 hover:bg-gray-50'}`}><IconCreditCard /> <span className="ml-2">Payment Due</span></button>
+        <button onClick={() => setActiveTab('yearlyReport')} className={`flex items-center px-4 py-2 rounded-lg text-sm font-bold whitespace-nowrap transition-colors ${activeTab === 'yearlyReport' ? 'bg-blue-50 text-blue-600' : 'text-gray-500 hover:bg-gray-50'}`}><IconBarChart2 /> <span className="ml-2">Yearly Report</span></button>
+        <button onClick={() => setActiveTab('accounting')} className={`flex items-center px-4 py-2 rounded-lg text-sm font-bold whitespace-nowrap transition-colors ${activeTab === 'accounting' ? 'bg-blue-50 text-blue-600' : 'text-gray-500 hover:bg-gray-50'}`}><IconAccounting /> <span className="ml-2">Accounting</span></button>
+      </div>
+      <div className="relative ml-1 shrink-0">
+        <button onClick={() => setIsOtherMenuOpen(!isOtherMenuOpen)} className="flex items-center px-3 py-2 text-gray-500 hover:bg-gray-50 rounded-lg text-sm font-semibold transition-colors whitespace-nowrap">
+          <span className="text-red-500"><IconPin /></span>
+          <span className="ml-2 hidden sm:block">Other</span>
+          <span className="ml-1 text-gray-400"><IconChevronDown /></span>
+        </button>
+        {isOtherMenuOpen && (
+          <>
+            <div className="fixed inset-0 z-[100]" onClick={() => setIsOtherMenuOpen(false)}></div>
+            <div className="absolute right-0 sm:left-0 top-full mt-2 w-56 bg-white rounded-xl shadow-xl z-[101] border border-gray-100 overflow-hidden animate-fade-in">
+              <div className="py-1 flex flex-col">
+                <a href="https://script.google.com/macros/s/AKfycbxS0oAeM3iMVvoVO55RH0AJE9D6hM7XAvPjuPcZORWWOlh4KBeHeoA44jAwVDvCZnQ/exec" target="_blank" rel="noopener noreferrer" onClick={() => setIsOtherMenuOpen(false)} className="px-4 py-3 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 font-bold transition-colors border-b border-gray-50 cursor-pointer block">HalaWalla Booking</a>
+                <a href="https://taxi-booking-one.vercel.app" target="_blank" rel="noopener noreferrer" onClick={() => setIsOtherMenuOpen(false)} className="px-4 py-3 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 font-bold transition-colors border-b border-gray-50 cursor-pointer block">Taxi Booking</a>
+                <a href="https://offersystemhala.vercel.app/" target="_blank" rel="noopener noreferrer" onClick={() => setIsOtherMenuOpen(false)} className="px-4 py-3 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 font-bold transition-colors cursor-pointer block">Create Package</a>
+              </div>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+    <div className="mt-4 md:mt-0 px-2 w-full md:w-auto shrink-0">
+      {activeTab !== 'dailyOps' && activeTab !== 'paymentDue' && (
+        <div className="px-4 py-1.5 flex items-center bg-green-50 text-green-700 border border-green-200 rounded-lg shadow-sm">
+          <span className="text-sm font-bold">
+            {activeTab === 'overview' ? (currentMonthText || "รายรับเดือนปัจจุบัน") :
+             activeTab === 'accounting' ? `สรุปบัญชีปี ${parseInt(activeYear) + 543}` :
+             `รายรับรวมทั้งปี ${parseInt(currentYear) + 543}`}
+          </span>
+        </div>
+      )}
+    </div>
+  </div>
+);
+
+// --- Overview Components ---
+const MetricCard = ({ title, value, accent = 'text-gray-900' }) => (
+  <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm hover:shadow-md transition-all duration-200">
+    <h3 className="text-sm font-bold text-gray-600 mb-4">{title}</h3>
+    <p className={`text-3xl font-extrabold ${accent} tracking-tight`}>{value}</p>
+  </div>
+);
+const ThemeParkCard = ({ icon, name, total, used, remaining, formatNumber }) => (
+  <div className="bg-white rounded-xl border border-gray-200 p-8 shadow-sm">
+    <div className="flex items-center mb-8">{icon}<h3 className="font-semibold text-gray-800">{name}</h3></div>
+    <div className="border-t border-dashed border-gray-200 mb-6"></div>
+    <div className="grid grid-cols-3 gap-4 text-center">
+      <div><p className="text-3xl font-bold text-blue-500 mb-1">{formatNumber(total)}</p><p className="text-xs font-bold text-gray-500 uppercase">ทั้งหมด</p></div>
+      <div><p className={`text-3xl font-bold mb-1 ${(used || 0) > 0 ? 'text-red-500' : 'text-gray-400'}`}>{formatNumber(used)}</p><p className="text-xs font-bold text-gray-500 uppercase">ใช้ไป</p></div>
+      <div><p className={`text-3xl font-bold mb-1 ${remaining < 0 ? 'text-red-500' : 'text-green-500'}`}>{formatNumber(remaining)}</p><p className="text-xs font-bold text-gray-500 uppercase">คงเหลือ</p></div>
+    </div>
+  </div>
+);
+const RecentVoucherCard = ({ vouchers }) => (
+  <div className="mt-6 bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+    <div className="px-6 py-4 border-b border-gray-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+      <div>
+        <h2 className="text-sm font-extrabold text-gray-800">รายการ Voucher ล่าสุด</h2>
+        <p className="text-xs font-semibold text-gray-400 mt-1">เรียงตาม Voucher Number จากใหม่สุด แสดง 10 รายการ</p>
+      </div>
+      <span className="self-start sm:self-auto bg-blue-50 text-blue-600 border border-blue-100 px-3 py-1 rounded-full text-xs font-bold">
+        {vouchers.length} รายการ
+      </span>
+    </div>
+    {vouchers.length === 0 ? (
+      <div className="px-6 py-10 text-center text-gray-400 text-sm">ยังไม่มีรายการ Voucher</div>
+    ) : (
+      <div className="divide-y divide-gray-100">
+        {vouchers.map((item, idx) => (
+          <div key={`${item.voucher}-${idx}`} className="px-6 py-3 flex flex-col md:flex-row md:items-center gap-2 hover:bg-blue-50/40 transition-colors">
+            <div className="flex items-center gap-3 min-w-0 flex-1">
+              <span className="bg-gray-800 text-white text-xs font-bold px-2.5 py-1 rounded min-w-[4rem] text-center">{item.voucher}</span>
+              <div className="min-w-0">
+                <div className="flex items-center gap-2">
+                  <p className="font-bold text-sm text-gray-900 truncate">{item.customer}</p>
+                  <span className={`hidden sm:inline-flex px-2 py-0.5 rounded-full text-[11px] font-bold border ${item.type === 'Tour' ? 'bg-blue-50 text-blue-600 border-blue-100' : 'bg-purple-50 text-purple-600 border-purple-100'}`}>
+                    {item.type || 'Booking'}
+                  </span>
+                </div>
+                <p className="text-xs font-semibold text-gray-500 truncate mt-0.5">{item.service || '-'}</p>
+              </div>
+            </div>
+            <div className="md:w-32 md:text-right text-xs font-bold text-gray-400 pl-[5.25rem] md:pl-0">
+              {formatDateShow(item.date)}
+            </div>
+          </div>
+        ))}
+      </div>
+    )}
+  </div>
+);
+
+// --- App ---
 const { useState, useEffect } = React;
 
 function App() {

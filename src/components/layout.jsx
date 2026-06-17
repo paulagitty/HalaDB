@@ -1,3 +1,4 @@
+const { IconClipboardList, IconCreditCard, IconBarChart2, IconPin, IconChevronDown, IconAccounting } = window;
 const DashboardHeader = ({ activeTab, activeYear }) => (
   <div className="mb-6 flex justify-between items-end">
     <div>
@@ -67,3 +68,4 @@ const DashboardNav = ({
     </div>
   </div>
 );
+Object.assign(window, { DashboardHeader, DashboardNav });

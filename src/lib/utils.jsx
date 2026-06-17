@@ -9,3 +9,5 @@ const formatDateShow = (dStr) => {
   if(parts.length === 3) return `${parts[2]}/${parts[1]}/${parts[0]}`;
   return dStr;
 };
+window.GOOGLE_API_URL = GOOGLE_API_URL;
+window.formatDateShow = formatDateShow;

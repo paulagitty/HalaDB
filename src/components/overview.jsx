@@ -1,3 +1,4 @@
+const { formatDateShow } = window;
 const MetricCard = ({ title, value, accent = 'text-gray-900' }) => (
   <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm hover:shadow-md transition-all duration-200">
     <h3 className="text-sm font-bold text-gray-600 mb-4">{title}</h3>
@@ -55,4 +56,4 @@ const RecentVoucherCard = ({ vouchers }) => (
     )}
   </div>
 );
-
+Object.assign(window, { MetricCard, ThemeParkCard, RecentVoucherCard });

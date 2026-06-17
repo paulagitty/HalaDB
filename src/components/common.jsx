@@ -23,5 +23,4 @@ const ErrorState = ({ message }) => (
     <p>{message}</p>
   </div>
 );
-
-
+Object.assign(window, { StatusToggle, LoadingState, ErrorState });
