@@ -1,0 +1,35 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background-color: #f9fafb;
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+}
+
+@media (max-width: 640px) {
+  input[type="date"], input[type="number"], input[type="text"] { font-size: 16px; }
+}
+
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-in { animation: fadeIn 0.2s ease-out forwards; }
+
+.toggle-checkbox:checked { right: 0; border-color: #68D391; }
+.toggle-checkbox:checked + .toggle-label { background-color: #68D391; }
+.toggle-checkbox { right: 0; z-index: 1; border-color: #e2e8f0; transition: all 0.3s; }
+.toggle-label { width: 2.5rem; height: 1.25rem; background-color: #e2e8f0; border-radius: 9999px; transition: all 0.3s; cursor: pointer; }
+@media (min-width: 640px) { .toggle-label { width: 3rem; height: 1.5rem; } }
+
+.mobile-bottom-nav { padding-bottom: env(safe-area-inset-bottom); }
+.mobile-app-shell { padding-bottom: calc(3.75rem + env(safe-area-inset-bottom)); }
+@media (min-width: 768px) { .mobile-app-shell { padding-bottom: 0; } }
