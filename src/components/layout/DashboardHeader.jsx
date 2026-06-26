@@ -1,5 +1,6 @@
 import { TAB_TITLES } from '../../config/tabs';
 import { IconMoreHorizontal } from '../icons';
+import AppLogo from './AppLogo';
 
 export default function DashboardHeader({ activeTab, activeYear, currentMonthText, currentYear, isOtherMenuOpen, setIsOtherMenuOpen }) {
   const badgeText =
@@ -12,9 +13,12 @@ export default function DashboardHeader({ activeTab, activeYear, currentMonthTex
     <>
       <header className="md:hidden sticky top-0 z-40 -mx-2 px-2 py-1.5 mb-2 bg-gray-50/95 backdrop-blur border-b border-gray-200/80">
         <div className="flex items-center justify-between gap-2">
-          <div className="min-w-0 flex-1">
-            <h1 className="text-sm font-extrabold text-gray-900 truncate">{TAB_TITLES[activeTab]}</h1>
-            {badgeText && <p className="text-[10px] text-green-700 font-semibold truncate">{badgeText}</p>}
+          <div className="flex items-center gap-2 min-w-0 flex-1">
+            <AppLogo size="sm" />
+            <div className="min-w-0">
+              <h1 className="text-sm font-extrabold text-gray-900 truncate">{TAB_TITLES[activeTab]}</h1>
+              {badgeText && <p className="text-[10px] text-green-700 font-semibold truncate">{badgeText}</p>}
+            </div>
           </div>
           <div className="relative shrink-0">
             <button type="button" onClick={() => setIsOtherMenuOpen(!isOtherMenuOpen)} className="w-8 h-8 flex items-center justify-center rounded-full bg-white border border-gray-200 text-gray-600 active:bg-gray-100" aria-label="Other links">
