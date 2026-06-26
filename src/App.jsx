@@ -21,6 +21,7 @@ const EMPTY_DASHBOARD = {
   themeParks: { fantasea: { initialQuota: 183, used: 0 }, carnivalMagic: { initialQuota: 1200, used: 0 } },
   yearlyReport: [],
   manualYearlyData: {},
+  accountingData: {},
   dailyOps: { tours: [], hotels: [] },
   voucherList: [],
   paymentList: [],
@@ -99,7 +100,7 @@ export default function App() {
             {activeTab === 'yearlyReport' && <YearlyReportTab dashboardData={dashboardData} currentYear={currentYear} onRefresh={fetchData} saving={saving} setSaving={setSaving} />}
           </>
         )}
-        {activeTab === 'accounting' && <AccountingTab dashboardData={dashboardData} currentYear={currentYear} activeYear={activeYear} setActiveYear={setSelectedYear} />}
+        {activeTab === 'accounting' && <AccountingTab dashboardData={dashboardData} currentYear={currentYear} activeYear={activeYear} setActiveYear={setSelectedYear} onRefresh={fetchData} saving={saving} setSaving={setSaving} />}
         {activeTab === 'dailyOps' && <DailyOpsTab dashboardData={dashboardData} />}
         {activeTab === 'paymentDue' && (
           <PaymentDueTab dashboardData={dashboardData} onPaymentUpdate={updatePaymentLocally} onRefresh={fetchData} />

@@ -1,14 +1,22 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
+import { saveAccountingEntries } from '../../api/googleSheets';
+import { mergeAccountingMaps } from '../../lib/accounting';
 import { IconChevronLeft, IconChevronRight } from '../icons';
 import ScrollTableWrap from '../common/ScrollTableWrap';
 import { formatCurrency, formatCurrencyShort, getMonthName, getMonthNameShort } from '../../lib/format';
 
-export default function AccountingTab({ dashboardData, currentYear, activeYear, setActiveYear }) {
+function readLocalAccounting() {
+  try { return JSON.parse(localStorage.getItem('hala_accounting') || '{}'); } catch { return {}; }
+}
+
+export default function AccountingTab({ dashboardData, currentYear, activeYear, setActiveYear, onRefresh, saving, setSaving }) {
   const [isEditingAccounting, setIsEditingAccounting] = useState(false);
   const [accountingEditForm, setAccountingEditForm] = useState({});
-  const [accountingData, setAccountingData] = useState(() => {
-    try { return JSON.parse(localStorage.getItem('hala_accounting') || '{}'); } catch { return {}; }
-  });
+
+  const accountingData = useMemo(
+    () => mergeAccountingMaps(readLocalAccounting(), dashboardData?.accountingData || {}),
+    [dashboardData?.accountingData],
+  );
 
   const manualData = dashboardData?.manualYearlyData || {};
   const thisYearReport = (dashboardData?.yearlyReport || []).filter((r) => r.month?.startsWith(activeYear));
@@ -46,23 +54,51 @@ export default function AccountingTab({ dashboardData, currentYear, activeYear, 
 
   const startAccountingEdit = () => {
     const form = {};
-    MONTH_KEYS.forEach((month) => { const acc = accountingData[month] || {}; form[month] = { salary: acc.salary ?? '', socialSec: acc.socialSec ?? '', others: acc.others ?? '', vat: acc.vat ?? '' }; });
+    MONTH_KEYS.forEach((month) => {
+      const acc = accountingData[month] || {};
+      form[month] = { salary: acc.salary ?? '', socialSec: acc.socialSec ?? '', others: acc.others ?? '', vat: acc.vat ?? '' };
+    });
     setAccountingEditForm(form);
     setIsEditingAccounting(true);
   };
 
-  const saveAccounting = () => {
-    const updated = { ...accountingData };
-    Object.keys(accountingEditForm).forEach((month) => {
-      const f = accountingEditForm[month];
-      const salary = parseFloat(f.salary) || 0; const socialSec = parseFloat(f.socialSec) || 0; const others = parseFloat(f.others) || 0; const vat = parseFloat(f.vat) || 0;
-      if (salary === 0 && socialSec === 0 && others === 0 && vat === 0) delete updated[month];
-      else updated[month] = { salary, socialSec, others, vat };
-    });
-    setAccountingData(updated);
-    localStorage.setItem('hala_accounting', JSON.stringify(updated));
-    setIsEditingAccounting(false);
-    setAccountingEditForm({});
+  const saveAccounting = async () => {
+    setSaving(true);
+    try {
+      const entries = Object.keys(accountingEditForm).map((month) => {
+        const f = accountingEditForm[month];
+        const salary = parseFloat(f.salary) || 0;
+        const socialSec = parseFloat(f.socialSec) || 0;
+        const others = parseFloat(f.others) || 0;
+        const vat = parseFloat(f.vat) || 0;
+        return { month, salary, socialSec, others, vat, othersDesc: accountingData[month]?.othersDesc || '' };
+      }).filter((e) => e.salary || e.socialSec || e.others || e.vat);
+
+      const updated = { ...accountingData };
+      Object.keys(accountingEditForm).forEach((month) => {
+        const f = accountingEditForm[month];
+        const salary = parseFloat(f.salary) || 0;
+        const socialSec = parseFloat(f.socialSec) || 0;
+        const others = parseFloat(f.others) || 0;
+        const vat = parseFloat(f.vat) || 0;
+        if (salary === 0 && socialSec === 0 && others === 0 && vat === 0) delete updated[month];
+        else updated[month] = { salary, socialSec, others, vat, othersDesc: updated[month]?.othersDesc || '' };
+      });
+      localStorage.setItem('hala_accounting', JSON.stringify(updated));
+
+      if (entries.length > 0) {
+        const result = await saveAccountingEntries(entries);
+        if (result.status !== 'success') throw new Error(result.message || 'save failed');
+        await onRefresh();
+      }
+
+      setIsEditingAccounting(false);
+      setAccountingEditForm({});
+    } catch (err) {
+      alert('บันทึกไม่สำเร็จ: ' + err.message);
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -76,7 +112,7 @@ export default function AccountingTab({ dashboardData, currentYear, activeYear, 
             <button type="button" onClick={() => { setActiveYear(String(parseInt(activeYear) + 1)); setIsEditingAccounting(false); }} className="p-1 rounded-md"><IconChevronRight /></button>
           </div>
           {isEditingAccounting ? (
-            <div className="flex gap-2"><button type="button" onClick={() => { setIsEditingAccounting(false); setAccountingEditForm({}); }} className="px-3 py-1.5 text-xs font-bold border rounded-lg">ยกเลิก</button><button type="button" onClick={saveAccounting} className="px-3 py-1.5 text-xs font-bold text-white bg-green-600 rounded-lg">💾 บันทึก</button></div>
+            <div className="flex gap-2"><button type="button" onClick={() => { setIsEditingAccounting(false); setAccountingEditForm({}); }} className="px-3 py-1.5 text-xs font-bold border rounded-lg">ยกเลิก</button><button type="button" onClick={saveAccounting} disabled={saving} className="px-3 py-1.5 text-xs font-bold text-white bg-green-600 rounded-lg">{saving ? 'บันทึก...' : '💾 บันทึก'}</button></div>
           ) : (
             <button type="button" onClick={startAccountingEdit} className="px-3 py-1.5 text-[11px] font-bold text-indigo-600 bg-indigo-50 border border-indigo-200 rounded-lg">✏️ กรอกค่าใช้จ่าย</button>
           )}
