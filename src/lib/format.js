@@ -38,6 +38,18 @@ export const getVoucherNumber = (voucher) => {
   return matches ? parseInt(matches[matches.length - 1], 10) : -1;
 };
 
+export const formatVoucherShort = (voucher) => {
+  const raw = String(voucher || '').trim();
+  if (!raw) return '-';
+  return raw.length >= 3 ? raw.slice(-3) : raw;
+};
+
+export const truncateText = (text, max = 18) => {
+  const value = String(text || '').trim();
+  if (!value) return '-';
+  return value.length > max ? `${value.slice(0, max)}…` : value;
+};
+
 export function getVisiblePaymentList(paymentList) {
   return (paymentList || []).filter((p) => {
     if (p.isCleared === true) return false;

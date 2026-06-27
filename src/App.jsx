@@ -9,6 +9,7 @@ import MobileBottomNav from './components/layout/MobileBottomNav';
 import MetricCard from './components/overview/MetricCard';
 import MobileMetricStrip from './components/overview/MobileMetricStrip';
 import OverviewTab from './components/tabs/OverviewTab';
+import MonthlyReportTab from './components/tabs/MonthlyReportTab';
 import YearlyReportTab from './components/tabs/YearlyReportTab';
 import AccountingTab from './components/tabs/AccountingTab';
 import DailyOpsTab from './components/tabs/DailyOpsTab';
@@ -22,6 +23,7 @@ const EMPTY_DASHBOARD = {
   yearlyReport: [],
   manualYearlyData: {},
   accountingData: {},
+  monthlySummary: {},
   dailyOps: { tours: [], hotels: [] },
   voucherList: [],
   paymentList: [],
@@ -102,6 +104,7 @@ export default function App() {
         )}
         {activeTab === 'accounting' && <AccountingTab dashboardData={dashboardData} currentYear={currentYear} activeYear={activeYear} setActiveYear={setSelectedYear} onRefresh={fetchData} saving={saving} setSaving={setSaving} />}
         {activeTab === 'dailyOps' && <DailyOpsTab dashboardData={dashboardData} />}
+        {activeTab === 'monthlyReport' && <MonthlyReportTab dashboardData={dashboardData} />}
         {activeTab === 'paymentDue' && (
           <PaymentDueTab dashboardData={dashboardData} onPaymentUpdate={updatePaymentLocally} onRefresh={fetchData} />
         )}

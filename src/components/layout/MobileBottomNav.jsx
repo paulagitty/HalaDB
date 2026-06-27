@@ -3,7 +3,7 @@ import { TABS } from '../../config/tabs';
 export default function MobileBottomNav({ activeTab, setActiveTab }) {
   return (
     <nav className="md:hidden fixed bottom-0 inset-x-0 z-50 bg-white border-t border-gray-200 shadow-[0_-4px_20px_rgba(0,0,0,0.06)] mobile-bottom-nav">
-      <div className="grid grid-cols-5 max-w-lg mx-auto">
+      <div className="grid grid-cols-6 max-w-lg mx-auto">
         {TABS.map(({ id, mobileLabel, icon: Icon }) => {
           const active = activeTab === id;
           return (

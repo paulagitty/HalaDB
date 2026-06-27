@@ -1,8 +1,9 @@
-import { IconHome, IconClipboardList, IconCreditCard, IconBarChart2, IconAccounting } from '../components/icons';
+import { IconHome, IconClipboardList, IconCreditCard, IconBarChart2, IconAccounting, IconCalendar } from '../components/icons';
 
 export const TABS = [
   { id: 'overview', label: 'ภาพรวม', mobileLabel: 'สรุป', icon: IconHome },
   { id: 'dailyOps', label: 'Daily Ops', mobileLabel: 'Ops', icon: IconClipboardList },
+  { id: 'monthlyReport', label: 'Monthly', mobileLabel: 'Month', icon: IconCalendar },
   { id: 'paymentDue', label: 'Payment Due', mobileLabel: 'Pay', icon: IconCreditCard },
   { id: 'yearlyReport', label: 'Yearly Report', mobileLabel: 'Year', icon: IconBarChart2 },
   { id: 'accounting', label: 'Accounting', mobileLabel: 'Acct', icon: IconAccounting },
@@ -11,6 +12,7 @@ export const TABS = [
 export const TAB_TITLES = {
   overview: 'ภาพรวม',
   dailyOps: 'Daily Ops',
+  monthlyReport: 'Monthly',
   paymentDue: 'Payment Due',
   yearlyReport: 'Yearly Report',
   accounting: 'Accounting',

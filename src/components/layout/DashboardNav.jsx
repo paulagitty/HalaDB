@@ -31,7 +31,7 @@ export default function DashboardNav({ activeTab, activeYear, currentYear, curre
         </div>
       </div>
       <div className="mt-4 md:mt-0 px-2 w-full md:w-auto shrink-0">
-        {activeTab !== 'dailyOps' && activeTab !== 'paymentDue' && (
+        {activeTab !== 'dailyOps' && activeTab !== 'paymentDue' && activeTab !== 'monthlyReport' && (
           <div className="px-4 py-1.5 flex items-center bg-green-50 text-green-700 border border-green-200 rounded-lg shadow-sm">
             <span className="text-sm font-bold">
               {activeTab === 'overview' ? (currentMonthText || 'รายรับเดือนปัจจุบัน') :

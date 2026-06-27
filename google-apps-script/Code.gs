@@ -260,6 +260,81 @@ function saveAccountingEntries(ss, entries) {
   return { status: 'success' };
 }
 
+function normalizeHeaderName(name) {
+  return String(name || '').toLowerCase().replace(/[\s_\-]/g, '');
+}
+
+function findColumn(headers, names, fallbackIndex) {
+  var normalized = headers.map(normalizeHeaderName);
+  for (var i = 0; i < names.length; i++) {
+    var idx = normalized.indexOf(normalizeHeaderName(names[i]));
+    if (idx >= 0) return idx;
+  }
+  return fallbackIndex;
+}
+
+function cell(row, idx) {
+  return idx >= 0 ? row[idx] : '';
+}
+
+function ensureMonthlyBucket(monthlySummary, month) {
+  if (!monthlySummary[month]) {
+    monthlySummary[month] = {
+      tours: [],
+      hotels: [],
+      tourTotal: 0,
+      hotelTotal: 0
+    };
+  }
+  return monthlySummary[month];
+}
+
+function addTourMonthlySummaryRow(monthlySummary, row, headers, month) {
+  if (!/^20\d{2}-\d{2}$/.test(month)) return;
+
+  var colVoucher = findColumn(headers, ['Voucher ID', 'Voucher', 'VoucherID'], 0);
+  var colGuest = findColumn(headers, ['Guest Name', 'Guest', 'Customer', 'Customer Name'], 2);
+  var colNationality = findColumn(headers, ['Nationality', 'Nation'], 5);
+  var colTour = findColumn(headers, ['Tour', 'Tour Name', 'Service'], 11);
+  var colCompany = findColumn(headers, ['Company', 'Company Name', 'Supplier'], 12);
+  var colProfit = findColumn(headers, ['Profit', 'Total Profit', 'Net Profit'], 23);
+
+  var profit = parseNum(cell(row, colProfit));
+  var bucket = ensureMonthlyBucket(monthlySummary, month);
+  bucket.tourTotal += profit;
+  bucket.tours.push({
+    voucher: String(cell(row, colVoucher) || '').trim(),
+    guestName: String(cell(row, colGuest) || '').trim(),
+    nationality: String(cell(row, colNationality) || '').trim(),
+    tour: String(cell(row, colTour) || '').trim(),
+    company: String(cell(row, colCompany) || '').trim(),
+    profit: profit
+  });
+}
+
+function addHotelMonthlySummaryRow(monthlySummary, row, headers, month) {
+  if (!/^20\d{2}-\d{2}$/.test(month)) return;
+
+  var colVoucher = findColumn(headers, ['Voucher ID', 'Voucher', 'VoucherID'], 0);
+  var colGuest = findColumn(headers, ['Guest Name', 'Guest', 'Customer', 'Customer Name'], 2);
+  var colNationality = findColumn(headers, ['Nationality', 'Nation'], 5);
+  var colHotel = findColumn(headers, ['Hotel Name', 'Hotel', 'Service'], 10);
+  var colStay = findColumn(headers, ['Stay Date', 'StayDate', 'Date', 'Check In'], 9);
+  var colProfit = findColumn(headers, ['Profit', 'Total Profit', 'Net Profit'], 22);
+
+  var profit = parseNum(cell(row, colProfit));
+  var bucket = ensureMonthlyBucket(monthlySummary, month);
+  bucket.hotelTotal += profit;
+  bucket.hotels.push({
+    voucher: String(cell(row, colVoucher) || '').trim(),
+    guestName: String(cell(row, colGuest) || '').trim(),
+    nationality: String(cell(row, colNationality) || '').trim(),
+    hotelName: String(cell(row, colHotel) || '').trim(),
+    stayDate: String(cell(row, colStay) || '').trim(),
+    profit: profit
+  });
+}
+
 function getDashboardData() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   SpreadsheetApp.flush();
@@ -280,6 +355,7 @@ function getDashboardData() {
     yearlyReport: [],
     manualYearlyData: {},
     accountingData: {},
+    monthlySummary: {},
     dailyOps: { tours: [], hotels: [] },
     paymentList: []
   };
@@ -360,6 +436,7 @@ function getDashboardData() {
   var tour26Sheet = getSheetFlexible(ss, "Tour26");
   if (tour26Sheet) {
     var tourData = tour26Sheet.getDataRange().getValues();
+    var tourHeaders = tourData[0] || [];
     for (var i = 1; i < tourData.length; i++) {
       var voucherRaw = String(tourData[i][0] || "").trim();
       if (!voucherRaw) continue;
@@ -370,6 +447,8 @@ function getDashboardData() {
 
       var rowYM = String(tourData[i][25] || "").trim();
       if (!/^20\d{2}-\d{2}$/.test(rowYM)) rowYM = String(tourData[i][24] || "").trim();
+
+      addTourMonthlySummaryRow(dashboardData.monthlySummary, tourData[i], tourHeaders, rowYM);
 
       if (rowYM && rowYM < currentYM && !isUnpaid) continue;
 
@@ -403,6 +482,7 @@ function getDashboardData() {
   var hotel26Sheet = getSheetFlexible(ss, "Hotel26");
   if (hotel26Sheet) {
     var hotelData = hotel26Sheet.getDataRange().getValues();
+    var hotelHeaders = hotelData[0] || [];
     for (var i = 1; i < hotelData.length; i++) {
       var voucherRawH = String(hotelData[i][0] || "").trim();
       if (!voucherRawH) continue;
@@ -413,6 +493,8 @@ function getDashboardData() {
 
       var rowYMH = String(hotelData[i][23] || "").trim();
       if (!/^20\d{2}-\d{2}$/.test(rowYMH)) rowYMH = String(hotelData[i][24] || "").trim();
+
+      addHotelMonthlySummaryRow(dashboardData.monthlySummary, hotelData[i], hotelHeaders, rowYMH);
 
       if (rowYMH && rowYMH < currentYM && !isUnpaidH) continue;
 

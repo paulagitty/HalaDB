@@ -44,6 +44,7 @@ export default function DashboardHeader({ activeTab, activeYear, currentMonthTex
            activeTab === 'yearlyReport' ? `รายงานสรุปรายปี (Yearly Report ${parseInt(activeYear) + 543})` :
            activeTab === 'accounting' ? `สรุปบัญชีรายเดือน (Accounting ${parseInt(activeYear) + 543})` :
            activeTab === 'paymentDue' ? 'ระบบจัดการกำหนดชำระเงิน (Payment Due)' :
+           activeTab === 'monthlyReport' ? 'รายงานรายได้ประจำเดือน (Monthly)' :
            'รายงานการดำเนินงานประจำวัน (Daily Operations)'}
         </p>
       </div>
